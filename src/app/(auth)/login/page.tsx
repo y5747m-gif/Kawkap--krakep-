@@ -2,15 +2,15 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { LogIn, Loader2, Phone, KeyRound } from "lucide-react";
 import Logo from "@/components/Logo";
 import { toast } from "@/components/Toast";
 
 function LoginForm() {
-  const router = useRouter();
   const sp = useSearchParams();
-  const next = sp.get("next") || "/";
+  const requestedNext = sp.get("next");
+  const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/";
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,8 +27,8 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast(`أهلًا بك ${data.user.name}!`, "success");
-      router.push(next);
-      router.refresh();
+      // إعادة تحميل كاملة تضمن إرسال كوكي الجلسة قبل فتح صفحة البيع المحمية.
+      window.location.assign(next);
     } catch (err) {
       toast(err instanceof Error ? err.message : "حدث خطأ", "error");
       setLoading(false);

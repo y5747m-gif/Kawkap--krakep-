@@ -1,5 +1,5 @@
 /** نماذج المستخدمين والجلسات والعناوين والمحادثات */
-import { all, get, run } from "../db";
+import { all, db, get, run } from "../db";
 import { newId } from "../ids";
 import type { User, Profile, Address, Conversation } from "../types";
 
@@ -40,15 +40,23 @@ export function createUser(data: {
 }): User {
   const id = newId();
   const now = new Date().toISOString();
-  run(
-    `INSERT INTO users (id, name, phone, email, password_hash, role, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    id, data.name, data.phone, data.email ?? null, data.passwordHash, data.role ?? "CUSTOMER", now, now
-  );
-  run(
-    `INSERT INTO profiles (user_id, gov, area, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
-    id, data.gov ?? null, data.area ?? null, now, now
-  );
+  // المستخدم وملفه وحدة واحدة: لا نترك حسابًا ناقصًا إذا تعطلت الكتابة الثانية.
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    run(
+      `INSERT INTO users (id, name, phone, email, password_hash, role, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, data.name, data.phone, data.email ?? null, data.passwordHash, data.role ?? "CUSTOMER", now, now
+    );
+    run(
+      `INSERT INTO profiles (user_id, gov, area, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+      id, data.gov ?? null, data.area ?? null, now, now
+    );
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
   return { id, name: data.name, phone: data.phone, email: data.email ?? null, role: data.role ?? "CUSTOMER", createdAt: now, updatedAt: now };
 }
 
