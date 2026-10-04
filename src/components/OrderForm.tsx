@@ -3,9 +3,10 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Loader2, ShoppingBag, MapPin, LocateFixed, NotebookPen, Truck, Store, Handshake,
+  Loader2, MapPin, LocateFixed, NotebookPen, Truck, Store, Handshake,
 } from "lucide-react";
 import { toast } from "./Toast";
+import WhatsAppIcon from "./WhatsAppIcon";
 import { formatMoney, formatQuantity, formatUnitPrice } from "@/lib/format";
 import { computeLineTotal } from "@/lib/pricing";
 import { GOVERNORATES, DELIVERY_METHODS } from "@/lib/constants";
@@ -325,21 +326,21 @@ export default function OrderForm({
       </div>
 
       {/* زر التأكيد */}
-      <button type="submit" disabled={loading} className="btn-sell w-full px-6 py-4 text-base">
+      <button type="submit" disabled={loading} className="btn-whatsapp glow-pulse w-full px-6 py-4 text-base">
         {loading ? (
           <Loader2 size={20} className="animate-spin" />
         ) : (
           <>
-            <ShoppingBag size={19} />
-            تأكيد الطلب — {formatMoney(total)}
+            <WhatsAppIcon size={20} />
+            إرسال الطلب — {formatMoney(total)}
           </>
         )}
       </button>
 
       <p className="flex items-center justify-center gap-1.5 text-center text-[11px] leading-5 text-planet-500">
         <NotebookPen size={13} className="shrink-0" />
-        بضغطك «تأكيد الطلب» يُحفظ الطلب في النظام برقم فريد، ويُفتح واتساب مباشرة
-        لترسل تفاصيل الطلب لإدارة كوكب كراكيب لمتابعته.
+        بضغطك «إرسال الطلب» يُحفظ الطلب في النظام برقم فريد، ثم يُفتح واتساب تلقائيًا
+        برسالة منسّقة بكل التفاصيل تصل مباشرة لإدارة كوكب كراكيب لمتابعتها.
       </p>
     </form>
   );

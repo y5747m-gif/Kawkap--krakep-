@@ -10,8 +10,14 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import Footer from "@/components/Footer";
 import ToastHost from "@/components/Toast";
+import IntroSplash from "@/components/IntroSplash";
+import AmbientLights from "@/components/AmbientLights";
+import PointerLight from "@/components/PointerLight";
+import PageFade from "@/components/PageFade";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 import { getCurrentUser } from "@/lib/auth";
 import { cartCount } from "@/lib/models/products";
+import { createOwnerContactLink } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
   title: {
@@ -29,17 +35,37 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * سكربت صغير يعمل قبل الرسم: يحدد إن كان الزائر قد شاهد المقدمة في هذه
+ * الجلسة، فتُخفى فورًا بدون أي ومضة (مع دعم ‎?intro=1‎ لإعادة تشغيلها).
+ */
+const INTRO_BOOT = `(function(){try{var f=location.search.indexOf("intro=")>-1;var s=sessionStorage.getItem("kk-intro-seen-v1")==="1";document.documentElement.dataset.kkIntro=(!f&&s)?"done":"play";}catch(e){document.documentElement.dataset.kkIntro="play";}})();`;
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   const cart = user ? cartCount(user.id) : 0;
+  const ownerWhatsAppUrl = createOwnerContactLink();
 
   return (
     <html lang="ar" dir="rtl">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: INTRO_BOOT }} />
+        {/* بدون جافاسكربت: لا تظهر المقدمة إطلاقًا */}
+        <noscript>
+          <style>{`.kk-intro{display:none !important}`}</style>
+        </noscript>
+      </head>
       <body className="min-h-screen">
+        <IntroSplash />
+        <AmbientLights />
+        <PointerLight />
         <Header user={user} cartCount={cart} />
-        <main className="mx-auto w-full max-w-7xl px-3 pb-28 pt-4 sm:px-5 md:pb-16">{children}</main>
+        <main className="mx-auto w-full max-w-7xl px-3 pb-28 pt-4 sm:px-5 md:pb-16">
+          <PageFade>{children}</PageFade>
+        </main>
         <Footer />
         <BottomNav />
+        <FloatingWhatsApp url={ownerWhatsAppUrl} />
         <ToastHost />
       </body>
     </html>

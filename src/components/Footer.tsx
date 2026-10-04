@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Recycle, ShieldCheck, MapPinned, BadgeCheck } from "lucide-react";
 import Logo from "./Logo";
+import ReplayIntroButton from "./ReplayIntroButton";
 import { CATEGORIES } from "@/lib/constants";
 
 export default function Footer() {
@@ -12,7 +13,7 @@ export default function Footer() {
 
       <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-5 py-14 md:grid-cols-4">
         <div className="md:col-span-2">
-          <div className="[&_span]:!text-white [&_.text-planet-500]:!text-tealx-400">
+          <div className="float-slower [&_span]:!text-white [&_.text-planet-500]:!text-tealx-400">
             <Logo size={46} />
           </div>
           <p className="mt-4 max-w-md text-sm leading-7 text-white/70">
@@ -51,8 +52,9 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="relative border-t border-white/10 py-5 text-center text-xs text-white/50">
-        كوكب كراكيب © {new Date().getFullYear()} — حوّل الكراكيب إلى قيمة، وحماية كوكبنا مسؤوليتنا جميعًا
+      <div className="relative flex flex-col items-center justify-center gap-2 border-t border-white/10 py-5 text-center text-xs text-white/50 sm:flex-row sm:gap-4">
+        <span>كوكب كراكيب © {new Date().getFullYear()} — حوّل الكراكيب إلى قيمة، وحماية كوكبنا مسؤوليتنا جميعًا</span>
+        <ReplayIntroButton />
       </div>
     </footer>
   );

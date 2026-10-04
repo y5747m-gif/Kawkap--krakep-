@@ -1,8 +1,8 @@
 /** شعار كوكب كراكيب — كوكب بحلقة مدارية وورقة (SVG) */
 export default function Logo({ size = 40, withText = true }: { size?: number; withText?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2.5" aria-label="كوكب كراكيب">
-      <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <span className="kk-logo inline-flex items-center gap-2.5" aria-label="كوكب كراكيب">
+      <svg className="kk-logo-svg" width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="kk-planet" x1="8" y1="6" x2="52" y2="56" gradientUnits="userSpaceOnUse">
             <stop stopColor="#2dd4bf" />
@@ -28,11 +28,11 @@ export default function Logo({ size = 40, withText = true }: { size?: number; wi
         <circle cx="39.5" cy="38" r="2.2" fill="#eafff5" opacity="0.7" />
         {/* الحلقة المدارية الذهبية */}
         <g transform="rotate(-16 32 32)">
-          <ellipse cx="32" cy="32" rx="29" ry="9.5" stroke="url(#kk-ring)" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeDasharray="130 24" />
+          <ellipse className="kk-logo-ring" cx="32" cy="32" rx="29" ry="9.5" stroke="url(#kk-ring)" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeDasharray="130 24" />
         </g>
         {/* نجم صغير على المدار */}
-        <circle cx="55.5" cy="24" r="3" fill="#fbbf24" />
-        <circle cx="55.5" cy="24" r="5.5" fill="#fbbf24" opacity="0.3" />
+        <circle className="kk-logo-star" cx="55.5" cy="24" r="3" fill="#fbbf24" />
+        <circle className="kk-logo-star" cx="55.5" cy="24" r="5.5" fill="#fbbf24" opacity="0.3" />
       </svg>
       {withText && (
         <span className="leading-tight">

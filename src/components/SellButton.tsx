@@ -29,7 +29,7 @@ export default function SellButton({
   return (
     <button
       onClick={() => router.push("/sell")}
-      className={`btn-sell group ${dims} ${full ? "w-full" : ""}`}
+      className={`btn-sell group sheen ${dims} ${full ? "w-full" : ""}`}
     >
       {withIcon && (
         <Camera size={size === "lg" ? 22 : 18} strokeWidth={2.4} className="transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110" />

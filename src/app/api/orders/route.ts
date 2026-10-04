@@ -1,8 +1,10 @@
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { jsonOk, jsonError, getBaseUrl } from "@/lib/http";
 import { createOrder, OrderValidationError } from "@/lib/orders";
 import { listBuyerOrders } from "@/lib/models/orders";
+import { generateOrderWhatsAppMessage } from "@/lib/whatsapp";
+import { sendOwnerWhatsAppMessage, isAutoSendEnabled } from "@/lib/whatsapp-send";
 import type { DeliveryMethod } from "@/lib/types";
 
 /**
@@ -33,6 +35,17 @@ export async function POST(req: NextRequest) {
       viewer,
       getBaseUrl(req)
     );
+    // نسخة إضافية للمالك عبر WhatsApp Cloud API إن كانت مفعّلة في البيئة
+    if (isAutoSendEnabled()) {
+      const baseUrl = getBaseUrl(req);
+      const first = result.order.items[0];
+      const text = generateOrderWhatsAppMessage(
+        result.order,
+        first ? `${baseUrl}/products/${first.productId}` : undefined
+      );
+      after(() => sendOwnerWhatsAppMessage(text));
+    }
+
     return jsonOk({
       orderCode: result.order.orderCode,
       order: result.order,

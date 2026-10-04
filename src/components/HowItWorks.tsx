@@ -17,8 +17,8 @@ export default function HowItWorks({ dark = false }: { dark?: boolean }) {
         return (
           <div
             key={i}
-            className={`fade-up fade-up-${i + 1} relative flex flex-col items-center rounded-3xl p-5 text-center ${
-              dark ? "glass-dark" : "glass"
+            className={`fade-up fade-up-${i + 1} spot group relative flex flex-col items-center rounded-3xl p-5 text-center transition-all duration-300 hover:-translate-y-1.5 ${
+              dark ? "glass-dark hover:bg-white/15" : "glass hover:shadow-lift"
             }`}
           >
             <span
@@ -29,7 +29,7 @@ export default function HowItWorks({ dark = false }: { dark?: boolean }) {
               {i + 1}
             </span>
             <span
-              className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${
+              className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110 ${
                 dark ? "bg-white/10 text-tealx-400" : "bg-gradient-to-br from-planet-100 to-tealx-500/20 text-planet-600"
               }`}
             >
