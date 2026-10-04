@@ -1,7 +1,6 @@
 /**
- * كوكب كراكيب — الكوكب المتحرك (SVG)
- * كوكب أخضر/تركوازي بسطح يدور، هالة ضوئية، وحلقة مدارية ذهبية
- * تتحرك حولها شهبٌ صغيرة. يُستخدم في المقدمة (Intro) وفي البطل (Hero).
+ * النسخة المتحركة من الشعار الرسمي.
+ * تُستخدم في مقدمة الموقع والبطل مع الحفاظ على الهالة والمدارات والشهب.
  */
 export default function PlanetMark({
   size = 220,
@@ -9,92 +8,54 @@ export default function PlanetMark({
   className = "",
 }: {
   size?: number;
-  /** تشغيل دوران السطح والحلقة */
   spinning?: boolean;
   className?: string;
 }) {
-  const uid = "kkp";
   return (
     <span
       className={`kk-planet ${spinning ? "is-spinning" : ""} ${className}`}
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      {/* الهالة الضوئية */}
       <span className="kk-planet-halo" />
 
       <svg viewBox="0 0 200 200" width={size} height={size} fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <radialGradient id={`${uid}-body`} cx="38%" cy="32%" r="78%">
-            <stop offset="0%" stopColor="#6ff0d2" />
-            <stop offset="45%" stopColor="#1fa27c" />
-            <stop offset="100%" stopColor="#0b5744" />
+          <radialGradient id="kk-new-logo-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0" stopColor="#34d399" stopOpacity=".48" />
+            <stop offset=".68" stopColor="#0f9f7a" stopOpacity=".12" />
+            <stop offset="1" stopColor="#0f9f7a" stopOpacity="0" />
           </radialGradient>
-          <linearGradient id={`${uid}-ring`} x1="10" y1="100" x2="190" y2="100" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#fbbf24" />
-            <stop offset="0.5" stopColor="#f59e0b" />
-            <stop offset="1" stopColor="#fb923c" />
+          <linearGradient id="kk-new-logo-green" x1="42" y1="35" x2="157" y2="165" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#6ee7c3" />
+            <stop offset=".42" stopColor="#10b981" />
+            <stop offset="1" stopColor="#064e3b" />
           </linearGradient>
-          <radialGradient id={`${uid}-glow`} cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.55" />
-            <stop offset="70%" stopColor="#1fa27c" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#1fa27c" stopOpacity="0" />
-          </radialGradient>
-          <clipPath id={`${uid}-sphere`}>
-            <circle cx="100" cy="100" r="58" />
-          </clipPath>
+          <linearGradient id="kk-new-logo-gold" x1="145" y1="45" x2="165" y2="70" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#fde68a" />
+            <stop offset="1" stopColor="#c89d3d" />
+          </linearGradient>
+          <filter id="kk-new-logo-shadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="8" stdDeviation="7" floodColor="#022c22" floodOpacity=".38" />
+          </filter>
         </defs>
 
-        {/* توهج خارجي */}
-        <circle cx="100" cy="100" r="96" fill={`url(#${uid}-glow)`} />
+        <circle cx="100" cy="100" r="98" fill="url(#kk-new-logo-glow)" />
 
-        {/* جسم الكوكب */}
-        <circle cx="100" cy="100" r="58" fill={`url(#${uid}-body)`} />
-
-        {/* سطح الكوكب الدوّار — قارات على شكل أوراق وبقع */}
-        <g clipPath={`url(#${uid}-sphere)`}>
-          <g className="kk-planet-surface">
-            <path
-              d="M104 56c-24 5-38 20-38 39 0 10 4 18 11 25 7-30 26-42 44-46-4-10-10-18-17-18z"
-              fill="#eafff5"
-              opacity="0.92"
-            />
-            <circle cx="70" cy="124" r="10" fill="#eafff5" opacity="0.75" />
-            <circle cx="126" cy="120" r="7" fill="#eafff5" opacity="0.6" />
-            <ellipse cx="150" cy="78" rx="16" ry="9" fill="#eafff5" opacity="0.45" />
-            <path
-              d="M44 92c10-6 22-6 30 2-10 6-22 7-30-2z"
-              fill="#eafff5"
-              opacity="0.5"
-            />
-            {/* نسخة مكررة لاستمرارية الدوران */}
-            <circle cx="186" cy="108" r="9" fill="#eafff5" opacity="0.5" />
-            <circle cx="18" cy="70" r="7" fill="#eafff5" opacity="0.45" />
-          </g>
+        {/* الشعار نفسه: نفس هندسة شعار الترويسة تمامًا */}
+        <g className="kk-planet-logo-core" filter="url(#kk-new-logo-shadow)" transform="scale(2.77778)">
+          <path d="M56.8 25.8A24 24 0 0 0 22.1 15.2 24 24 0 0 0 14.6 45.7" stroke="url(#kk-new-logo-green)" strokeWidth="8" strokeLinecap="square" />
+          <path d="M19.1 53A24 24 0 0 0 58.4 35.2" stroke="url(#kk-new-logo-green)" strokeWidth="8" strokeLinecap="square" />
+          <path d="M24 43h29V35.8c0-4.6-3.7-8.3-8.3-8.3H36l14.5-14.2" stroke="url(#kk-new-logo-green)" strokeWidth="7" strokeLinecap="square" strokeLinejoin="miter" />
+          <circle cx="25" cy="31.5" r="3.2" fill="url(#kk-new-logo-gold)" />
+          <path className="kk-planet-ring" d="M8.7 45.5C16.3 53 34.8 49.9 50.9 39.1 63 31 67.4 22.8 62 19.2" stroke="url(#kk-new-logo-green)" strokeWidth="3.3" strokeLinecap="round" />
+          <path d="M55.2 17.8c3.2-.4 5.7.1 7.3 1.5" stroke="url(#kk-new-logo-gold)" strokeWidth="3.3" strokeLinecap="round" />
         </g>
 
-        {/* لمعة الإضاءة على الكرة */}
-        <ellipse cx="78" cy="74" rx="26" ry="18" fill="#ffffff" opacity="0.22" transform="rotate(-28 78 74)" />
-        <circle cx="100" cy="100" r="58" fill="none" stroke="#ffffff" strokeOpacity="0.25" strokeWidth="1.5" />
-
-        {/* الحلقة المدارية الذهبية */}
-        <g transform="rotate(-18 100 100)">
-          <ellipse
-            className="kk-planet-ring"
-            cx="100"
-            cy="100"
-            rx="90"
-            ry="29"
-            stroke={`url(#${uid}-ring)`}
-            strokeWidth="6"
-            strokeLinecap="round"
-            fill="none"
-            strokeDasharray="300 60"
-          />
-        </g>
+        {/* بريق يمر على الشعار أثناء ظهوره */}
+        <path className="kk-logo-spark" d="M42 49 50 31l7 18 18 7-18 7-7 18-8-18-18-7 18-7Z" fill="white" opacity="0" />
       </svg>
 
-      {/* شهاب يدور حول الكوكب في مدار ثلاثي الأبعاد */}
       <span className="kk-orbit">
         <span className="kk-orbit-star" />
       </span>

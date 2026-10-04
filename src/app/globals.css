@@ -539,17 +539,32 @@ html[data-kk-intro="done"] .kk-intro {
   50% { opacity: 1; transform: scale(1.08); }
 }
 
-.kk-planet.is-spinning .kk-planet-surface {
-  transform-origin: 100px 100px;
-  animation: kk-surface-spin 16s linear infinite;
+.kk-planet-logo-core {
+  transform-origin: 36px 36px;
 }
 
-@keyframes kk-surface-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.kk-planet.is-spinning .kk-planet-logo-core {
+  animation: kk-logo-breathe 3.8s ease-in-out infinite;
+}
+
+@keyframes kk-logo-breathe {
+  0%, 100% { transform: scale(2.77778); }
+  50% { transform: scale(2.84); }
+}
+
+.kk-planet.is-spinning .kk-logo-spark {
+  transform-origin: 50px 56px;
+  animation: kk-logo-spark 3.8s ease-in-out infinite;
+}
+
+@keyframes kk-logo-spark {
+  0%, 55%, 100% { opacity: 0; transform: scale(0.35) rotate(0deg); }
+  68% { opacity: 0.88; transform: scale(1) rotate(24deg); }
+  82% { opacity: 0; transform: scale(1.45) rotate(42deg); }
 }
 
 .kk-planet.is-spinning .kk-planet-ring {
+  stroke-dasharray: 90 10;
   animation: kk-ring-dash 5s linear infinite;
 }
 
@@ -829,6 +844,8 @@ html[data-kk-intro="done"] .kk-intro {
   .kk-intro-grid,
   .kk-intro-aurora,
   .kk-planet-surface,
+  .kk-planet-logo-core,
+  .kk-logo-spark,
   .kk-planet-ring,
   .kk-orbit,
   .kk-ambient-blob,
