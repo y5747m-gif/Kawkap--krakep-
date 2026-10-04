@@ -1,0 +1,240 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import {
+  MapPin, Truck, HandCoins, Package, Eye, CalendarDays, ChevronLeft, Store,
+  BadgeCheck, MessageSquareQuote, Info,
+} from "lucide-react";
+import Gallery from "@/components/Gallery";
+import RatingStars from "@/components/RatingStars";
+import FavoriteButton from "@/components/FavoriteButton";
+import CategoryIcon from "@/components/CategoryIcon";
+import ProductCard from "@/components/ProductCard";
+import SectionHeader from "@/components/SectionHeader";
+import { OrderNowButton, ContactSellerButton, ShareButton, ReportButton } from "@/components/ProductActions";
+import { getCurrentUser } from "@/lib/auth";
+import { getProductDetail, incrementViews, searchProducts } from "@/lib/models/products";
+import { listAddresses } from "@/lib/models/users";
+import { formatMoney, formatQuantity, formatUnitPrice, formatDate, formatNumber } from "@/lib/format";
+import { CONDITION_MAP } from "@/lib/constants";
+import { formatDistance } from "@/lib/geo";
+
+export const dynamic = "force-dynamic";
+
+export default async function ProductPage({ params }: { params: { id: string } }) {
+  const user = getCurrentUser();
+  const product = getProductDetail(params.id, user?.id);
+
+  if (!product || (product.status === "REJECTED" && user?.id !== product.sellerId && user?.role !== "ADMIN")) {
+    notFound();
+  }
+
+  incrementViews(product.id);
+
+  const isOwner = user?.id === product.sellerId;
+  const isAvailable = product.status === "ACTIVE" && !isOwner;
+  const addresses = user ? listAddresses(user.id) : [];
+  const related = searchProducts({
+    categorySlug: product.categorySlug,
+    limit: 4,
+    viewerId: user?.id,
+    excludeSellerId: product.sellerId,
+  });
+  const distance = formatDistance(product.distanceKm ?? null);
+  const contactPhone = product.contactPhone || product.sellerPhone;
+
+  const orderProduct = {
+    id: product.id,
+    title: product.title,
+    price: product.price,
+    pricingType: product.pricingType,
+    unit: product.unit,
+    quantity: product.quantity,
+    gov: product.gov,
+    area: product.area,
+    sellerId: product.sellerId,
+    sellerName: product.sellerName,
+  };
+
+  return (
+    <div className="space-y-10">
+      {/* مسار التنقل */}
+      <nav className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-planet-500">
+        <Link href="/" className="hover:text-planet-700">الرئيسية</Link>
+        <ChevronLeft size={13} />
+        <Link href="/products" className="hover:text-planet-700">الكراكيب</Link>
+        <ChevronLeft size={13} />
+        <Link href={`/categories/${product.categorySlug}`} className="hover:text-planet-700">{product.categoryName}</Link>
+        <ChevronLeft size={13} />
+        <span className="text-planet-800">{product.title}</span>
+      </nav>
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* الصور */}
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <Gallery images={product.images} title={product.title} />
+        </div>
+
+        {/* التفاصيل */}
+        <div className="space-y-5">
+          <div className="glass rounded-3xl p-6">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <Link
+                href={`/categories/${product.categorySlug}`}
+                className="chip border-white/60 bg-white text-white shadow-sm"
+                style={{ backgroundColor: `${product.categoryColor}18`, color: product.categoryColor }}
+              >
+                <CategoryIcon icon={product.categoryIcon} size={13} /> {product.categoryName}
+              </Link>
+              <span className="chip border-planet-200 bg-planet-50 text-planet-700">{CONDITION_MAP[product.condition]}</span>
+              {product.featured && (
+                <span className="chip border-gold-400/50 bg-gold-500/15 text-gold-600">إعلان مميز</span>
+              )}
+              {product.isDemo && (
+                <span className="chip border-sky-200 bg-sky-50 text-sky-600">بيانات تجريبية</span>
+              )}
+            </div>
+
+            <h1 className="text-2xl font-black leading-snug text-planet-950 sm:text-3xl">{product.title}</h1>
+
+            <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span className="text-3xl font-black text-planet-600">
+                {formatUnitPrice(product.price, product.pricingType, product.unit)}
+              </span>
+              {product.negotiable && (
+                <span className="chip border-tealx-400/40 bg-tealx-500/10 text-tealx-600">
+                  <HandCoins size={13} /> قابل للتفاوض
+                </span>
+              )}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div className="flex items-center gap-2 rounded-2xl bg-planet-50/70 px-3.5 py-2.5">
+                <Package size={16} className="shrink-0 text-planet-500" />
+                <span className="font-bold text-planet-800">{formatQuantity(product.quantity, product.unit)}</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl bg-planet-50/70 px-3.5 py-2.5">
+                <MapPin size={16} className="shrink-0 text-tealx-500" />
+                <span className="truncate font-bold text-planet-800">
+                  {product.gov}{product.area ? ` — ${product.area}` : ""}
+                  {distance ? ` (${distance})` : ""}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl bg-planet-50/70 px-3.5 py-2.5">
+                <Truck size={16} className="shrink-0 text-planet-500" />
+                <span className="font-bold text-planet-800">{product.hasDelivery ? "يوجد توصيل" : "بدون توصيل"}</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl bg-planet-50/70 px-3.5 py-2.5">
+                <Eye size={16} className="shrink-0 text-planet-500" />
+                <span className="font-bold text-planet-800">{formatNumber(product.views)} مشاهدة</span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-planet-500">
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarDays size={13} /> نُشر {formatDate(product.createdAt)}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Info size={13} /> كود الإعلان: {product.code}
+              </span>
+              {isOwner && (
+                <Link href={`/sell/${product.id}`} className="chip border-planet-300 bg-planet-50 text-planet-700">
+                  تعديل الإعلان
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* أزرار الطلب */}
+          <div className="space-y-3">
+            {isAvailable ? (
+              <OrderNowButton
+                product={orderProduct}
+                viewer={user ? { name: user.name, phone: user.phone, gov: user.profile?.gov ?? null, area: user.profile?.area ?? null } : null}
+                addresses={addresses}
+              />
+            ) : (
+              <div className="rounded-2xl border border-planet-100 bg-planet-50/70 px-5 py-4 text-center text-sm font-bold text-planet-700">
+                {isOwner ? "هذا إعلانك — يمكنك تعديله أو إيقافه من لوحة البائع" : "هذا الإعلان غير متاح للطلب حاليًا"}
+              </div>
+            )}
+
+            {isAvailable && (
+              <ContactSellerButton
+                sellerId={product.sellerId}
+                sellerName={product.sellerName}
+                sellerPhone={contactPhone || ""}
+                productTitle={product.title}
+                productId={product.id}
+              />
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <FavoriteButton productId={product.id} initial={product.isFavorite} />
+              <ShareButton title={product.title} url={`/products/${product.id}`} />
+            </div>
+          </div>
+
+          {/* البائع */}
+          <div className="glass rounded-3xl p-5">
+            <div className="flex items-center gap-4">
+              {product.sellerAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={product.sellerAvatar} alt={product.sellerName} className="h-14 w-14 rounded-2xl border-2 border-planet-100 object-cover" />
+              ) : (
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-planet-500 to-tealx-500 text-xl font-black text-white">
+                  {product.sellerName.charAt(0)}
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 text-base font-extrabold text-planet-950">
+                  {product.sellerName}
+                  {product.sellerRatingCount > 0 && <BadgeCheck size={16} className="text-tealx-500" />}
+                </p>
+                <RatingStars rating={product.sellerRating} count={product.sellerRatingCount} size={13} />
+                <p className="mt-0.5 text-xs text-planet-500">
+                  عضو منذ {formatDate(product.sellerSince)} · {formatNumber(product.sellerProductsCount)} إعلان منشور
+                </p>
+              </div>
+              <Link href={`/products?seller=${product.sellerId}`} className="btn-outline shrink-0 px-4 py-2.5 text-xs">
+                <Store size={14} /> إعلانات البائع
+              </Link>
+            </div>
+          </div>
+
+          {/* الوصف */}
+          <div className="glass rounded-3xl p-6">
+            <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold text-planet-950">
+              <MessageSquareQuote size={18} className="text-planet-500" /> وصف المنتج
+            </h2>
+            <p className="whitespace-pre-line text-sm leading-8 text-planet-800">{product.description}</p>
+            {product.notes && (
+              <div className="mt-4 rounded-2xl border border-gold-400/30 bg-gold-500/10 p-4">
+                <p className="text-xs font-extrabold text-gold-600">ملاحظات البائع</p>
+                <p className="mt-1 whitespace-pre-line text-sm leading-7 text-planet-800">{product.notes}</p>
+              </div>
+            )}
+            <div className="mt-4">
+              <ReportButton productId={product.id} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* منتجات مشابهة */}
+      {related.items.length > 0 && (
+        <section>
+          <SectionHeader
+            title="كراكيب مشابهة"
+            subtitle={`المزيد من تصنيف ${product.categoryName}`}
+            href={`/categories/${product.categorySlug}`}
+          />
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {related.items.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   كوكب كراكيب — نظام التصميم
+   أخضر بيئي + تركوازي + أبيض + أخضر داكن + لمسات ذهبية
+   Glass Cards · Soft Shadows · Gradients · Blur · Micro Animations
+   ============================================================ */
+
+:root {
+  --planet: #1fa27c;
+  --teal: #14b8a6;
+  --deep: #0f4439;
+  --deeper: #04241d;
+  --gold: #f59e0b;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply font-cairo text-planet-950 antialiased;
+  background:
+    radial-gradient(1100px 480px at 85% -10%, rgba(20, 184, 166, 0.1), transparent 60%),
+    radial-gradient(900px 420px at 8% 4%, rgba(31, 162, 124, 0.08), transparent 55%),
+    linear-gradient(180deg, #f1faf6 0%, #ffffff 45%, #f7fdfb 100%);
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(31, 162, 124, 0.25);
+}
+
+/* ---------- Scrollbars ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(31, 162, 124, 0.35) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(31, 162, 124, 0.3);
+  border-radius: 99px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(31, 162, 124, 0.55);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@layer components {
+  /* ---------- Glass ---------- */
+  .glass {
+    @apply border border-white/70 bg-white/75 shadow-soft backdrop-blur-xl;
+  }
+  .glass-dark {
+    @apply border border-white/15 bg-white/10 shadow-soft backdrop-blur-xl;
+  }
+
+  /* ---------- الأزرار ---------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl font-bold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* الزر الرئيسي للبيع — Green Gradient + Glow */
+  .btn-sell {
+    @apply btn relative overflow-hidden text-white;
+    background-image: linear-gradient(135deg, #1fa27c 0%, #14b8a6 100%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18) inset, 0 10px 30px rgba(31, 162, 124, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  }
+  .btn-sell::after {
+    content: "";
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%);
+    background-size: 220% 100%;
+    animation: shimmer 2.8s linear infinite;
+  }
+  .btn-sell:hover {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25) inset, 0 14px 44px rgba(31, 162, 124, 0.6);
+  }
+
+  .btn-primary {
+    @apply btn text-white;
+    background-image: linear-gradient(135deg, #1fa27c 0%, #128266 100%);
+    @apply shadow-glow;
+  }
+  .btn-primary:hover {
+    @apply shadow-glowLg;
+  }
+
+  .btn-outline {
+    @apply btn border-2 border-planet-500/40 bg-white/70 text-planet-700 backdrop-blur;
+  }
+  .btn-outline:hover {
+    @apply border-planet-500 bg-white shadow-soft;
+  }
+
+  .btn-ghost {
+    @apply btn text-planet-800 hover:bg-planet-50;
+  }
+
+  .btn-gold {
+    @apply btn text-white;
+    background-image: linear-gradient(135deg, #f59e0b, #ea580c);
+    @apply shadow-lift;
+  }
+
+  .btn-whatsapp {
+    @apply btn text-white;
+    background-image: linear-gradient(135deg, #1faa5c, #14b83a);
+    @apply shadow-lift;
+  }
+
+  /* ---------- الحقول ---------- */
+  .field {
+    @apply w-full rounded-2xl border border-planet-200/80 bg-white/85 px-4 py-3 text-[15px] text-planet-950 shadow-sm outline-none backdrop-blur transition-all placeholder:text-planet-400/70;
+  }
+  .field:focus {
+    @apply border-planet-400 ring-4 ring-planet-100;
+  }
+  .field-label {
+    @apply mb-1.5 block text-sm font-bold text-planet-900;
+  }
+
+  select.field {
+    @apply cursor-pointer appearance-none bg-no-repeat pe-10;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%231fa27c' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-position: left 1rem center;
+  }
+
+  /* ---------- عناصر أخرى ---------- */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lift;
+  }
+  .gradient-text {
+    @apply bg-gradient-to-l from-tealx-500 via-planet-500 to-planet-600 bg-clip-text text-transparent;
+  }
+  .skeleton {
+    @apply animate-pulse rounded-2xl bg-planet-100/70;
+  }
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ---------- Leaflet ---------- */
+.leaflet-container {
+  font-family: "Cairo", system-ui, sans-serif;
+  z-index: 0;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 1rem;
+  box-shadow: 0 12px 40px rgba(15, 68, 57, 0.18);
+  text-align: right;
+}
+.leaflet-popup-content {
+  margin: 0;
+  direction: rtl;
+}
+.kk-map-popup {
+  width: 230px;
+}
+.kk-marker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  direction: rtl;
+  background: linear-gradient(135deg, #1fa27c, #14b8a6);
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 6px 18px rgba(15, 68, 57, 0.35);
+  white-space: nowrap;
+}
+.kk-marker.is-featured {
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
+}
+
+/* ---------- تأثير دخول ---------- */
+.fade-up {
+  animation: fade-up 0.55s cubic-bezier(0.22, 0.8, 0.36, 1) both;
+}
+.fade-up-1 { animation-delay: 0.06s; }
+.fade-up-2 { animation-delay: 0.12s; }
+.fade-up-3 { animation-delay: 0.18s; }
+.fade-up-4 { animation-delay: 0.24s; }

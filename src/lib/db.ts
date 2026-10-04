@@ -1,0 +1,298 @@
+/**
+ * طبقة قاعدة البيانات — كوكب كراكيب
+ * تعتمد على وحدة node:sqlite المدمجة (Node >= 22.13) دون أي خدمات خارجية.
+ * الملف: data/app.db (يُنشأ تلقائيًا مع الجداول عند أول تشغيل).
+ */
+import { DatabaseSync } from "node:sqlite";
+import fs from "node:fs";
+import path from "node:path";
+
+const DB_PATH =
+  process.env.KK_DB_PATH || path.join(process.cwd(), "data", "app.db");
+
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+
+// منع تكرار فتح الاتصال عند إعادة تحميل الوحدات في وضع التطوير
+const g = globalThis as unknown as { __kkDb?: DatabaseSync };
+export const db: DatabaseSync = g.__kkDb ?? new DatabaseSync(DB_PATH);
+g.__kkDb = db;
+
+db.exec("PRAGMA journal_mode = WAL;");
+db.exec("PRAGMA foreign_keys = ON;");
+
+const SCHEMA = `
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL UNIQUE,
+  email TEXT UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'CUSTOMER',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  token TEXT NOT NULL UNIQUE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+
+CREATE TABLE IF NOT EXISTS profiles (
+  user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  avatar_url TEXT,
+  bio TEXT,
+  gov TEXT,
+  area TEXT,
+  latitude REAL,
+  longitude REAL,
+  rating_avg REAL NOT NULL DEFAULT 0,
+  rating_count INTEGER NOT NULL DEFAULT 0,
+  sales_count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS categories (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  icon TEXT NOT NULL DEFAULT 'tag',
+  color TEXT NOT NULL DEFAULT '#1fa27c',
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS products (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  seller_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  category_id TEXT NOT NULL REFERENCES categories(id),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  price REAL NOT NULL,
+  pricing_type TEXT NOT NULL DEFAULT 'FIXED',
+  quantity REAL NOT NULL DEFAULT 1,
+  unit TEXT NOT NULL DEFAULT 'قطعة',
+  condition TEXT NOT NULL DEFAULT 'USED',
+  gov TEXT NOT NULL,
+  area TEXT,
+  latitude REAL,
+  longitude REAL,
+  has_delivery INTEGER NOT NULL DEFAULT 0,
+  negotiable INTEGER NOT NULL DEFAULT 0,
+  contact_phone TEXT,
+  notes TEXT,
+  keywords TEXT,
+  status TEXT NOT NULL DEFAULT 'ACTIVE',
+  featured INTEGER NOT NULL DEFAULT 0,
+  is_demo INTEGER NOT NULL DEFAULT 0,
+  views INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_products_status_created ON products(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_seller ON products(seller_id);
+CREATE INDEX IF NOT EXISTS idx_products_featured ON products(featured);
+
+CREATE TABLE IF NOT EXISTS product_images (
+  id TEXT PRIMARY KEY,
+  product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_main INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_images_product ON product_images(product_id);
+
+CREATE TABLE IF NOT EXISTS favorites (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  price_at_save REAL NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(user_id, product_id)
+);
+CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id);
+
+CREATE TABLE IF NOT EXISTS carts (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cart_items (
+  id TEXT PRIMARY KEY,
+  cart_id TEXT NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
+  product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  quantity REAL NOT NULL,
+  price_at_add REAL NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(cart_id, product_id)
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  order_code TEXT NOT NULL UNIQUE,
+  buyer_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  customer_name TEXT NOT NULL,
+  customer_phone TEXT NOT NULL,
+  gov TEXT,
+  area TEXT,
+  address TEXT,
+  latitude REAL,
+  longitude REAL,
+  delivery_method TEXT NOT NULL DEFAULT 'PICKUP',
+  notes TEXT,
+  items_price REAL NOT NULL DEFAULT 0,
+  total REAL NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'NEW',
+  whatsapp_sent INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
+
+CREATE TABLE IF NOT EXISTS order_items (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  seller_id TEXT NOT NULL,
+  seller_name TEXT NOT NULL,
+  title TEXT NOT NULL,
+  unit TEXT NOT NULL,
+  price REAL NOT NULL,
+  pricing_type TEXT NOT NULL DEFAULT 'FIXED',
+  quantity REAL NOT NULL,
+  line_total REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_seller ON order_items(seller_id);
+
+CREATE TABLE IF NOT EXISTS seller_orders (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  seller_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+  total REAL NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'NEW',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_seller_orders_order ON seller_orders(order_id);
+CREATE INDEX IF NOT EXISTS idx_seller_orders_seller ON seller_orders(seller_id);
+
+CREATE TABLE IF NOT EXISTS reviews (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+  product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  seller_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  buyer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL,
+  comment TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_seller ON reviews(seller_id);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL DEFAULT 'SYSTEM',
+  title TEXT NOT NULL,
+  body TEXT,
+  link TEXT,
+  read INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read);
+
+CREATE TABLE IF NOT EXISTS addresses (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  label TEXT NOT NULL DEFAULT 'عنواني',
+  gov TEXT NOT NULL,
+  area TEXT,
+  details TEXT,
+  latitude REAL,
+  longitude REAL,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_addresses_user ON addresses(user_id);
+
+CREATE TABLE IF NOT EXISTS locations (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  latitude REAL NOT NULL,
+  longitude REAL NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS admin_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id TEXT PRIMARY KEY,
+  reporter_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  product_id TEXT REFERENCES products(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  details TEXT,
+  status TEXT NOT NULL DEFAULT 'OPEN',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+
+CREATE TABLE IF NOT EXISTS conversations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  seller_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product_id TEXT,
+  product_title TEXT,
+  last_message_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(user_id, seller_id, product_id)
+);
+CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id);
+`;
+
+db.exec(SCHEMA);
+
+/** helpers مختصرة للاستعلامات — تمرير undefined يُحوَّل تلقائيًا إلى NULL */
+type Param = string | number | null | undefined;
+
+function normalize(params: Param[]): (string | number | null)[] {
+  return params.map((p) => (p === undefined ? null : p));
+}
+
+export function all<T = Record<string, unknown>>(sql: string, ...params: Param[]): T[] {
+  return db.prepare(sql).all(...normalize(params)) as T[];
+}
+
+export function get<T = Record<string, unknown>>(sql: string, ...params: Param[]): T | undefined {
+  return db.prepare(sql).get(...normalize(params)) as T | undefined;
+}
+
+export function run(sql: string, ...params: Param[]) {
+  return db.prepare(sql).run(...normalize(params));
+}
+
+/** تنفيذ عدة عمليات داخل معاملة واحدة */
+export function tx<T>(fn: () => T): T {
+  db.exec("BEGIN");
+  try {
+    const result = fn();
+    db.exec("COMMIT");
+    return result;
+  } catch (e) {
+    db.exec("ROLLBACK");
+    throw e;
+  }
+}
