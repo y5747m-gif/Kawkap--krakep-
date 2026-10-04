@@ -1,37 +1,66 @@
-import { useId } from "react";
-
-/** هوية كوكب كراكيب: كوكب دائري تتوسطه أسهم إعادة الاستخدام وحرف الكاف. */
+/**
+ * شعار كوكب كراكيب — حرف «ك» عربي هندسي داخل كوكب ومدار ذهبي.
+ * SVG أصلي خفيف وواضح في المقاسات الصغيرة، بدون الاعتماد على صورة خارجية.
+ */
 export default function Logo({ size = 40, withText = true }: { size?: number; withText?: boolean }) {
-  const uid = useId().replace(/:/g, "");
-  const planet = `planet-${uid}`;
-  const orbit = `orbit-${uid}`;
-
   return (
     <span className="kk-logo inline-flex items-center gap-2.5" aria-label="كوكب كراكيب">
-      <svg className="kk-logo-svg" width={size} height={size} viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id={planet} x1="17" y1="12" x2="55" y2="61" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#34D399" />
-            <stop offset=".48" stopColor="#0F9F7A" />
-            <stop offset="1" stopColor="#075B4B" />
-          </linearGradient>
-          <linearGradient id={orbit} x1="5" y1="50" x2="67" y2="22" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#F59E0B" />
-            <stop offset="1" stopColor="#FCD34D" />
-          </linearGradient>
-        </defs>
-        <circle cx="36" cy="36" r="32" fill="#0F9F7A" opacity=".09" />
-        <circle cx="36" cy="36" r="24" fill={`url(#${planet})`} />
-        <path d="M23.5 32.5c1.8-7 8.8-11.6 16-10.2l-3-3.4 3.8-3.3 8.4 9.4-10.9 6.5-2.6-4.4 3.5-2.1c-4.5-.8-8.7 2-9.9 6.3l-5.3 1.2Z" fill="white" opacity=".96" />
-        <path d="M48.5 39.5c-1.8 7-8.8 11.6-16 10.2l3 3.4-3.8 3.3-8.4-9.4 10.9-6.5 2.6 4.4-3.5 2.1c4.5.8 8.7-2 9.9-6.3l5.3-1.2Z" fill="white" opacity=".96" />
-        <path d="M34.5 30v12M34.5 36l8-6M34.5 36l8 7" stroke="#075B4B" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 44c7.5 8.5 25.5 11.4 42 5.2 11.2-4.2 17-10.8 14.2-15.5" stroke={`url(#${orbit})`} strokeWidth="3" strokeLinecap="round" />
-        <circle cx="63.2" cy="31.8" r="3.4" fill="#FBBF24" />
+      <svg
+        className="kk-logo-svg shrink-0"
+        width={size}
+        height={size}
+        viewBox="0 0 72 72"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        {/* جسم الكوكب المفتوح حول المدار */}
+        <path
+          d="M56.8 25.8A24 24 0 0 0 22.1 15.2 24 24 0 0 0 14.6 45.7"
+          stroke="#064E3B"
+          strokeWidth="8"
+          strokeLinecap="square"
+        />
+        <path
+          d="M19.1 53A24 24 0 0 0 58.4 35.2"
+          stroke="#064E3B"
+          strokeWidth="8"
+          strokeLinecap="square"
+        />
+
+        {/* حرف الكاف كعلامة هندسية */}
+        <path
+          d="M24 43h29V35.8c0-4.6-3.7-8.3-8.3-8.3H36l14.5-14.2"
+          stroke="#064E3B"
+          strokeWidth="7"
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+        />
+        <circle cx="25" cy="31.5" r="3.2" fill="#C89D3D" />
+
+        {/* المدار؛ جزؤه الأمامي يمر فوق الحرف */}
+        <path
+          d="M8.7 45.5C16.3 53 34.8 49.9 50.9 39.1 63 31 67.4 22.8 62 19.2"
+          stroke="#064E3B"
+          strokeWidth="3.3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M55.2 17.8c3.2-.4 5.7.1 7.3 1.5"
+          stroke="#C89D3D"
+          strokeWidth="3.3"
+          strokeLinecap="round"
+        />
       </svg>
+
       {withText && (
         <span className="leading-tight">
-          <span className="block text-lg font-black text-planet-950">كوكب <span className="text-planet-600">كراكيب</span></span>
-          <span className="block text-[10px] font-bold tracking-wide text-planet-500">كل شيء يستحق فرصة ثانية</span>
+          <span className="block whitespace-nowrap text-lg font-black text-planet-950">
+            كوكب <span className="text-planet-600">كراكيب</span>
+          </span>
+          <span className="block whitespace-nowrap text-[10px] font-bold tracking-wide text-planet-500">
+            كل شيء يستحق فرصة ثانية
+          </span>
         </span>
       )}
     </span>
