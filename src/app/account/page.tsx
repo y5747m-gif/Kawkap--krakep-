@@ -133,7 +133,7 @@ export default async function AccountPage({
       {/* ================= نظرة عامة ================= */}
       {tab === "overview" && (
         <div className="grid gap-5 md:grid-cols-2">
-          <div className="glass rounded-3xl p-6">
+          <div className="glass rounded-3xl p-4 sm:p-6">
             <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold text-planet-950">
               <Store size={18} className="text-planet-500" /> نشاطي كبائع
             </h2>
@@ -155,7 +155,7 @@ export default async function AccountPage({
             </Link>
           </div>
 
-          <div className="glass rounded-3xl p-6">
+          <div className="glass rounded-3xl p-4 sm:p-6">
             <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold text-planet-950">
               <PackageCheck size={18} className="text-planet-500" /> نشاطي كمشترٍ
             </h2>

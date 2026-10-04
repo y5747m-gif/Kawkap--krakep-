@@ -18,20 +18,24 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-white/70 bg-white/90 backdrop-blur-xl md:hidden">
-      <div className="mx-auto grid max-w-lg grid-cols-5 items-end px-2 pb-1.5 pt-1">
+    <nav className="kk-bottom-nav" aria-label="التنقل السريع">
+      <div className="kk-bottom-row">
         {items.map((item) => {
           if (!item) {
             // الزر الأوسط — بيع
             return (
-              <div key="sell" className="relative flex justify-center">
-                <span className="absolute -top-8 h-16 w-16 rounded-full bg-gradient-to-br from-planet-500 to-tealx-500 blur-xl opacity-50 animate-pulse-glow" />
+              <div key="sell" className="relative h-full">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -top-4 left-1/2 h-14 w-14 -translate-x-1/2 rounded-full bg-gradient-to-br from-planet-500 to-tealx-500 opacity-40 blur-xl"
+                />
                 <Link
                   href="/sell"
                   aria-label="اعرض شيئًا للبيع"
-                  className="btn-sell relative -mt-8 flex h-14 w-14 flex-col items-center justify-center rounded-full animate-pulse-glow"
+                  aria-current={pathname?.startsWith("/sell") ? "page" : undefined}
+                  className="btn-sell kk-sell-fab animate-pulse-glow"
                 >
-                  <Plus size={24} strokeWidth={3} />
+                  <Plus size={22} strokeWidth={3} />
                   <span className="text-[10px] font-extrabold leading-none">بيع</span>
                 </Link>
               </div>
@@ -44,13 +48,14 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors ${
-                active ? "text-planet-600" : "text-planet-900/50"
-              }`}
+              data-active={active ? "true" : "false"}
+              aria-current={active ? "page" : undefined}
+              className="kk-nav-item"
             >
-              <Icon size={22} strokeWidth={active ? 2.6 : 2} />
-              {item.label}
-              <span className={`h-1 w-1 rounded-full ${active ? "bg-planet-500" : "bg-transparent"}`} />
+              <span className="kk-nav-icon">
+                <Icon size={21} strokeWidth={active ? 2.6 : 2} />
+              </span>
+              <span className="kk-nav-label">{item.label}</span>
             </Link>
           );
         })}

@@ -94,34 +94,35 @@ export default function ImageUploader({
                 <Star size={10} className="inline fill-white" /> الرئيسية
               </span>
             )}
-            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-planet-950/80 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+            {/* على الهاتف تظهر الأدوات دائمًا (لا يوجد مرور مؤشر) */}
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-planet-950/85 to-transparent p-1 opacity-100 transition-opacity md:p-1.5 md:opacity-0 md:group-hover:opacity-100">
               <button
                 type="button"
                 onClick={() => move(i, -1)}
-                className="rounded-lg bg-white/90 p-1.5 text-planet-800"
+                className="grid h-8 w-8 place-items-center rounded-lg bg-white/90 text-planet-800 active:scale-90 disabled:opacity-40"
                 aria-label="تقديم"
                 disabled={i === 0}
               >
-                <ChevronRight size={14} />
+                <ChevronRight size={15} />
               </button>
-              <div className="flex gap-1">
+              <div className="flex gap-0.5">
                 {i !== 0 && (
-                  <button type="button" onClick={() => makeMain(i)} className="rounded-lg bg-white/90 p-1.5 text-gold-600" aria-label="اجعل رئيسية" title="اجعلها الرئيسية">
-                    <Star size={14} />
+                  <button type="button" onClick={() => makeMain(i)} className="grid h-8 w-8 place-items-center rounded-lg bg-white/90 text-gold-600 active:scale-90" aria-label="اجعل رئيسية" title="اجعلها الرئيسية">
+                    <Star size={15} />
                   </button>
                 )}
-                <button type="button" onClick={() => remove(img.id)} className="rounded-lg bg-white/90 p-1.5 text-rose-600" aria-label="حذف">
-                  <Trash2 size={14} />
+                <button type="button" onClick={() => remove(img.id)} className="grid h-8 w-8 place-items-center rounded-lg bg-white/90 text-rose-600 active:scale-90" aria-label="حذف">
+                  <Trash2 size={15} />
                 </button>
               </div>
               <button
                 type="button"
                 onClick={() => move(i, 1)}
-                className="rounded-lg bg-white/90 p-1.5 text-planet-800"
+                className="grid h-8 w-8 place-items-center rounded-lg bg-white/90 text-planet-800 active:scale-90 disabled:opacity-40"
                 aria-label="تأخير"
                 disabled={i === images.length - 1}
               >
-                <ChevronLeft size={14} />
+                <ChevronLeft size={15} />
               </button>
             </div>
           </div>

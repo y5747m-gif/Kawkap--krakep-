@@ -46,19 +46,19 @@ export default function FavoriteButton({
       <button
         onClick={toggle}
         aria-label="إضافة للمفضلة"
-        className="absolute bottom-2.5 end-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-soft backdrop-blur transition-transform hover:scale-110 active:scale-90"
+        className="absolute bottom-2.5 end-2.5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-soft backdrop-blur transition-transform hover:scale-110 active:scale-90"
       >
         {loading ? (
-          <Loader2 size={17} className="animate-spin text-planet-500" />
+          <Loader2 size={18} className="animate-spin text-planet-500" />
         ) : (
-          <Heart size={17} className={fav ? "fill-rose-500 text-rose-500" : "text-planet-400"} />
+          <Heart size={18} className={fav ? "fill-rose-500 text-rose-500" : "text-planet-400"} />
         )}
       </button>
     );
   }
 
   return (
-    <button onClick={toggle} className="btn-outline gap-2 px-4 py-3 text-sm" disabled={loading}>
+    <button onClick={toggle} className="btn-outline min-h-[3rem] gap-2 px-4 py-3 text-sm" disabled={loading}>
       {loading ? <Loader2 size={17} className="animate-spin" /> : <Heart size={17} className={fav ? "fill-rose-500 text-rose-500" : ""} />}
       {fav ? "في المفضلة" : "أضف للمفضلة"}
     </button>

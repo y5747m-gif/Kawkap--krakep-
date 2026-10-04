@@ -34,23 +34,26 @@ export default function ProductsFilter() {
     <div className="glass rounded-3xl p-3.5">
       <form
         onSubmit={(e) => { e.preventDefault(); apply({ q: q.trim() || null }); }}
-        className="flex items-center gap-2"
+        className="flex flex-wrap items-center gap-2"
       >
-        <Search size={18} className="shrink-0 text-planet-500" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="ابحث في الاسم، الوصف، التصنيف، الموقع أو البائع..."
-          className="w-full bg-transparent text-sm font-semibold outline-none placeholder:font-normal placeholder:text-planet-400/80"
-        />
+        {/* حقل البحث — سطر كامل على الهاتف */}
+        <div className="flex w-full min-w-0 items-center gap-2 rounded-2xl border border-planet-100 bg-white/80 px-3 py-2.5 sm:w-auto sm:flex-1 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+          <Search size={18} className="shrink-0 text-planet-500" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="ابحث في الاسم، التصنيف، الموقع أو البائع..."
+            className="w-full min-w-0 bg-transparent text-sm font-semibold outline-none placeholder:font-normal placeholder:text-planet-400/80"
+          />
+        </div>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className={`btn-outline shrink-0 gap-1.5 px-3.5 py-2 text-xs ${open ? "border-planet-500" : ""}`}
+          className={`btn-outline h-11 flex-1 gap-1.5 px-3.5 text-xs sm:h-10 sm:flex-none ${open ? "border-planet-500" : ""}`}
         >
-          <SlidersHorizontal size={14} /> فلاتر
+          <SlidersHorizontal size={15} /> فلاتر
         </button>
-        <button type="submit" className="btn-primary shrink-0 px-4 py-2 text-xs">بحث</button>
+        <button type="submit" className="btn-primary h-11 flex-1 px-4 text-xs sm:h-10 sm:flex-none">بحث</button>
       </form>
 
       {open && (

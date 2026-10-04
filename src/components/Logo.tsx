@@ -1,12 +1,30 @@
 /**
  * شعار كوكب كراكيب — حرف «ك» عربي هندسي داخل كوكب ومدار ذهبي.
  * SVG أصلي خفيف وواضح في المقاسات الصغيرة، بدون الاعتماد على صورة خارجية.
+ *
+ * `size` هو المقاس الافتراضي، ويمكن تجاوزه بمقاسات متجاوبة عبر `className`
+ * (مثل "h-8 w-8 md:h-10 md:w-10") حتى يناسب الشعار شاشة الهاتف.
  */
-export default function Logo({ size = 40, withText = true }: { size?: number; withText?: boolean }) {
+export default function Logo({
+  size = 40,
+  withText = true,
+  className = "",
+  textClassName = "text-lg",
+  taglineClassName = "block",
+}: {
+  size?: number;
+  withText?: boolean;
+  /** فئات إضافية للأيقونة (تتيح مقاسًا متجاوبًا) */
+  className?: string;
+  /** فئات إضافية لاسم المنصة */
+  textClassName?: string;
+  /** فئات إضافية للجملة التعريفية (تُخفى على الشاشات الصغيرة) */
+  taglineClassName?: string;
+}) {
   return (
-    <span className="kk-logo inline-flex items-center gap-2.5" aria-label="كوكب كراكيب">
+    <span className="kk-logo inline-flex min-w-0 items-center gap-2 sm:gap-2.5" aria-label="كوكب كراكيب">
       <svg
-        className="kk-logo-svg shrink-0"
+        className={`kk-logo-svg shrink-0 ${className}`}
         width={size}
         height={size}
         viewBox="0 0 72 72"
@@ -54,11 +72,11 @@ export default function Logo({ size = 40, withText = true }: { size?: number; wi
       </svg>
 
       {withText && (
-        <span className="leading-tight">
-          <span className="block whitespace-nowrap text-lg font-black text-planet-950">
+        <span className="min-w-0 leading-tight">
+          <span className={`block truncate font-black text-planet-950 ${textClassName}`}>
             كوكب <span className="text-planet-600">كراكيب</span>
           </span>
-          <span className="block whitespace-nowrap text-[10px] font-bold tracking-wide text-planet-500">
+          <span className={`truncate text-[10px] font-bold tracking-wide text-planet-500 ${taglineClassName}`}>
             كل شيء يستحق فرصة ثانية
           </span>
         </span>
