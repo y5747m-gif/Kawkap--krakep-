@@ -60,7 +60,8 @@
 - **Leaflet / OpenStreetMap** للخرائط (بدون API Keys)
 - **bcryptjs** للمصادقة
 
-> **متطلبات:** Node.js ≥ 22.13
+> **متطلبات:** Node.js ≥ 22.13 — التطبيق يفحص الإصدار تلقائيًا قبل الإقلاع (`scripts/check-runtime.mjs`) ويوقف التشغيل برسالة واضحة إن كان الإصدار أقدم. استخدام إصدار أقدم يؤدي إلى ظهور **«500 Internal Server Error» على كل الصفحات** لأن وحدة `node:sqlite` غير متوفرة فيه.
+> إن ظهر الخطأ 500: تأكد من `node --version` ثم ثبّت Node 22.13+ من [nodejs.org](https://nodejs.org) أو نفّذ `nvm install 22 && nvm use 22` (يوجد ملف `.nvmrc`).
 
 ## التشغيل
 
