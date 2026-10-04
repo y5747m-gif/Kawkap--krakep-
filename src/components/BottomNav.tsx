@@ -20,7 +20,7 @@ export default function BottomNav() {
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-white/70 bg-white/90 backdrop-blur-xl md:hidden">
       <div className="mx-auto grid max-w-lg grid-cols-5 items-end px-2 pb-1.5 pt-1">
-        {items.map((item, i) => {
+        {items.map((item) => {
           if (!item) {
             // الزر الأوسط — بيع
             return (

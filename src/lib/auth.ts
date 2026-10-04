@@ -16,8 +16,9 @@ export function verifyPassword(password: string, hash: string): boolean {
 }
 
 /** المستخدم الحالي من كوكي الجلسة (يعمل في Server Components و Route Handlers) */
-export function getCurrentUser(): CurrentUser | null {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const userId = usersModel.getUserIdBySessionToken(token);
   if (!userId) return null;
@@ -35,9 +36,10 @@ export function isAdmin(user: CurrentUser | null): boolean {
 }
 
 /** إنشاء جلسة وضبط الكوكي — تُستدعى داخل Route Handlers فقط */
-export function startSession(userId: string): void {
+export async function startSession(userId: string): Promise<void> {
   const { token, expiresAt } = usersModel.createSession(userId);
-  cookies().set(SESSION_COOKIE, token, {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
@@ -45,10 +47,11 @@ export function startSession(userId: string): void {
   });
 }
 
-export function endSession(): void {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+export async function endSession(): Promise<void> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (token) usersModel.deleteSession(token);
-  cookies().set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
+  cookieStore.set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
 }
 
 // ------------------------- تسجيل ودخول -------------------------

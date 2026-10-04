@@ -5,18 +5,79 @@
  */
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
-const DB_PATH =
-  process.env.KK_DB_PATH || path.join(process.cwd(), "data", "app.db");
+const BUNDLED_DB_PATH = path.join(process.cwd(), "data", "app.db");
+const IS_VERCEL = process.env.VERCEL === "1";
 
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+/**
+ * نظام ملفات Vercel للـ Serverless للقراءة فقط، باستثناء /tmp. فتح قاعدة
+ * البيانات المرفقة مباشرة ثم تفعيل WAL كان يرمي:
+ *   ERR_SQLITE_ERROR: attempt to write a readonly database
+ * فينهار Root Layout وتعود كل الصفحات بخطأ 500.
+ *
+ * عند وجود KK_DB_PATH نستخدمه دائمًا (المسار الدائم الموصى به في الإنتاج).
+ * على Vercel ننسخ قاعدة البيانات المرفقة إلى /tmp عند الـ cold start. هذا
+ * يعيد الموقع للعمل، لكن /tmp مؤقت وغير مشترك بين نسخ الدوال؛ راجع README.
+ */
+export type DatabaseStorageMode = "persistent" | "vercel-temporary";
+
+function prepareDatabasePath(): { path: string; mode: DatabaseStorageMode } {
+  if (process.env.KK_DB_PATH) {
+    const configuredPath = path.resolve(process.env.KK_DB_PATH);
+    fs.mkdirSync(path.dirname(configuredPath), { recursive: true });
+    return { path: configuredPath, mode: "persistent" };
+  }
+
+  if (!IS_VERCEL) {
+    fs.mkdirSync(path.dirname(BUNDLED_DB_PATH), { recursive: true });
+    return { path: BUNDLED_DB_PATH, mode: "persistent" };
+  }
+
+  const tempDir = path.join(os.tmpdir(), "kawkap-krakep");
+  const tempPath = path.join(tempDir, "app.db");
+  fs.mkdirSync(tempDir, { recursive: true });
+
+  if (!fs.existsSync(tempPath)) {
+    if (fs.existsSync(BUNDLED_DB_PATH)) {
+      // كتابة ذرية حتى لا تفتح قاعدة منسوخة جزئيًا عند تزامن أول طلبين.
+      const stagingPath = `${tempPath}.${process.pid}.tmp`;
+      fs.copyFileSync(BUNDLED_DB_PATH, stagingPath);
+      try {
+        // link لا يستبدل ملفًا موجودًا، بخلاف rename في Linux.
+        fs.linkSync(stagingPath, tempPath);
+      } catch (error) {
+        // قد تكون عملية متزامنة سبقتنا بإنشاء الملف؛ نحتفظ بنسختها السليمة.
+        if (!fs.existsSync(tempPath)) throw error;
+      } finally {
+        fs.rmSync(stagingPath, { force: true });
+      }
+    }
+    // إن لم توجد النسخة المرفقة، ينشئ DatabaseSync ملفًا جديدًا ثم ينشئ SCHEMA.
+  }
+
+  return { path: tempPath, mode: "vercel-temporary" };
+}
+
+const databaseConfig = prepareDatabasePath();
+export const databaseStorageMode = databaseConfig.mode;
 
 // منع تكرار فتح الاتصال عند إعادة تحميل الوحدات في وضع التطوير
-const g = globalThis as unknown as { __kkDb?: DatabaseSync };
-export const db: DatabaseSync = g.__kkDb ?? new DatabaseSync(DB_PATH);
-g.__kkDb = db;
+const g = globalThis as unknown as {
+  __kkDb?: DatabaseSync;
+  __kkDbPath?: string;
+};
 
+export const db: DatabaseSync =
+  g.__kkDb && g.__kkDbPath === databaseConfig.path
+    ? g.__kkDb
+    : new DatabaseSync(databaseConfig.path);
+g.__kkDb = db;
+g.__kkDbPath = databaseConfig.path;
+
+// مهلة قصيرة بدل فشل الطلب فورًا عند تزامن عمليتي كتابة.
+db.exec("PRAGMA busy_timeout = 5000;");
 db.exec("PRAGMA journal_mode = WAL;");
 db.exec("PRAGMA foreign_keys = ON;");
 

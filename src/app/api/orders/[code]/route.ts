@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
-import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { jsonOk, jsonError, getBaseUrl } from "@/lib/http";
 import { getOrderByCode, markOrderWhatsappSent } from "@/lib/models/orders";
 import { createOwnerOrderLink, createOwnerInquiryLink } from "@/lib/whatsapp";
 
-type Ctx = { params: { code: string } };
+type Ctx = { params: Promise<{ code: string }> };
 
 /** GET — تفاصيل الطلب + رابط واتساب المالك المُعاد توليده من الإعدادات */
 export async function GET(req: NextRequest, { params }: Ctx) {
-  const order = getOrderByCode(params.code);
+  const { code } = await params;
+  const order = getOrderByCode(code);
   if (!order) return jsonError("الطلب غير موجود", 404);
   return jsonOk({
     order,
@@ -19,7 +19,8 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
 /** PATCH — تسجيل أن العميل فتح واتساب المالك للطلب */
 export async function PATCH(req: NextRequest, { params }: Ctx) {
-  const order = getOrderByCode(params.code);
+  const { code } = await params;
+  const order = getOrderByCode(code);
   if (!order) return jsonError("الطلب غير موجود", 404);
   try {
     const body = await req.json();

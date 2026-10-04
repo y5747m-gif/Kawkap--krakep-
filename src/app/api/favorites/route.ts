@@ -4,13 +4,13 @@ import { jsonOk, jsonError } from "@/lib/http";
 import { toggleFavorite, listFavorites } from "@/lib/models/products";
 
 export async function GET() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonOk({ favorites: [] });
   return jsonOk({ favorites: listFavorites(user.id) });
 }
 
 export async function POST(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول لحفظ المنتجات في مفضلتك", 401);
   const body = await req.json();
   const productId = String(body.productId ?? "");

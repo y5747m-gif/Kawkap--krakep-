@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import { toast } from "@/components/Toast";
-import { formatMoney, formatUnitPrice, formatNumber, formatDate } from "@/lib/format";
+import { formatUnitPrice, formatNumber, formatDate } from "@/lib/format";
 import type { ProductCardData } from "@/lib/types";
 
 const STATUS_TABS = [

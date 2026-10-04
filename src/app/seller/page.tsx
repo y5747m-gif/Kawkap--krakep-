@@ -21,7 +21,7 @@ export const metadata = { title: "لوحة البائع" };
 
 /** لوحة البائع — إحصائيات، إعلاناتي، والطلبات على منتجاتي */
 export default async function SellerPage() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return (
@@ -192,7 +192,7 @@ export default async function SellerPage() {
                       <span className="text-xs font-extrabold text-planet-800">{r.buyerName}</span>
                       <RatingStars rating={r.rating} size={12} showValue={false} />
                     </div>
-                    {r.comment && <p className="mt-1.5 text-xs leading-6 text-planet-600">"{r.comment}"</p>}
+                    {r.comment && <p className="mt-1.5 text-xs leading-6 text-planet-600">«{r.comment}»</p>}
                   </div>
                 ))}
               </div>

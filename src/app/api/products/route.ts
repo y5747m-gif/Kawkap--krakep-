@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getCurrentUser, isAdmin } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/http";
 import {
   searchProducts, createProduct, getCategoryBySlug, type ProductQuery,
@@ -13,7 +13,7 @@ import type { PricingType, ProductCondition, ProductStatus } from "@/lib/types";
 /** GET /api/products — بحث وتصفية المنتجات */
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
-  const viewer = getCurrentUser();
+  const viewer = await getCurrentUser();
 
   const query: ProductQuery = {
     q: sp.get("q") || undefined,
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
 /** POST /api/products — نشر إعلان جديد (العملاء هم البائعون) */
 export async function POST(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا لتتمكن من البيع", 401);
 
   try {

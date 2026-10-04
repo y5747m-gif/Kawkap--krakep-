@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LogIn, Loader2, Phone, Mail, KeyRound } from "lucide-react";
+import { LogIn, Loader2, Phone, KeyRound } from "lucide-react";
 import Logo from "@/components/Logo";
 import { toast } from "@/components/Toast";
 

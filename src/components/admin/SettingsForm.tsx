@@ -20,8 +20,6 @@ export default function AdminSettingsForm({
   const [demoMode, setDemoMode] = useState(initial.demoMode);
   const [saving, setSaving] = useState(false);
 
-  const intlPreview = toWhatsAppIntl(ownerWhatsapp) ?? "رقم غير صالح";
-
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);

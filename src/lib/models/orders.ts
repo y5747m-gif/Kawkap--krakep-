@@ -3,7 +3,7 @@ import { all, get, run, tx } from "../db";
 import { newId } from "../ids";
 import type {
   Order, OrderItem, OrderStatus, OrderWithItems, DeliveryMethod, PricingType,
-  ReviewRow, SellerOrder,
+  ReviewRow,
 } from "../types";
 
 function mapOrder(r: Record<string, unknown>): Order {

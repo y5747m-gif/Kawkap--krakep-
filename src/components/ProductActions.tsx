@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, Share2, Flag, Loader2, MessageCircle } from "lucide-react";
+import { ShoppingBag, Share2, Flag, Loader2 } from "lucide-react";
 import Modal from "./Modal";
 import OrderForm from "./OrderForm";
 import WhatsAppIcon from "./WhatsAppIcon";

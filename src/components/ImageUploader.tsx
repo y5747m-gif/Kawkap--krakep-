@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, ImagePlus, Trash2, Star, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "./Toast";
 import { MAX_PRODUCT_IMAGES } from "@/lib/constants";
@@ -59,7 +59,9 @@ export default function ImageUploader({
 
   // مرجع لأحدث نسخة من الصور داخل الحلقة المتسلسلة
   const imagesRef = useRef(images);
-  imagesRef.current = images;
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
 
   function remove(id: string) {
     onChange(images.filter((i) => i.id !== id));

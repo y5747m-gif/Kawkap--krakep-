@@ -9,11 +9,12 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "تعديل الإعلان" };
 
 /** تعديل إعلان — للبائع صاحب الإعلان أو الإدارة */
-export default async function EditListingPage({ params }: { params: { id: string } }) {
-  const user = getCurrentUser();
-  if (!user) redirect(`/login?next=/sell/${params.id}`);
+export default async function EditListingPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getCurrentUser();
+  if (!user) redirect(`/login?next=/sell/${id}`);
 
-  const product = getProductRow(params.id);
+  const product = getProductRow(id);
   if (!product) notFound();
   if (product.sellerId !== user.id && !isAdmin(user)) notFound();
 

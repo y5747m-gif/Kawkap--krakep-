@@ -15,10 +15,10 @@ const PAGE_SIZE = 16;
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const sp = await searchParams;
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const page = Math.max(1, Number(sp.page) || 1);
 
   const query: ProductQuery = {

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MapPin, Eye, Star, Package, Truck } from "lucide-react";
 import FavoriteButton from "./FavoriteButton";
 import RatingStars from "./RatingStars";
-import { formatMoney, formatQuantity, formatUnitPrice, timeAgo } from "@/lib/format";
+import { formatQuantity, formatUnitPrice, timeAgo } from "@/lib/format";
 import { CONDITION_MAP } from "@/lib/constants";
 import { formatDistance } from "@/lib/geo";
 import type { ProductCardData } from "@/lib/types";

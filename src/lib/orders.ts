@@ -19,7 +19,7 @@ import { notify } from "./models/misc";
 import { generateOrderCode } from "./ids";
 import { createOwnerOrderLink } from "./whatsapp";
 import { sanitizeText, normalizeEgyptianPhone, isValidQuantity } from "./validate";
-import { ORDER_STATUS_MAP, SITE_NAME } from "./constants";
+import { ORDER_STATUS_MAP } from "./constants";
 import { computeLineTotal } from "./pricing";
 import type { CurrentUser, CreateOrderResult, DeliveryMethod, OrderStatus, OrderWithItems } from "./types";
 import { formatMoney, formatQuantity } from "./format";
@@ -187,8 +187,6 @@ export function createOrder(
 }
 
 function getSellerName(sellerId: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { getUserById } = require("./models/users") as typeof import("./models/users");
   return getUserById(sellerId)?.name ?? "بائع";
 }
 
@@ -225,6 +223,7 @@ export function changeOrderStatus(
       userId: sellerId,
       type: "ORDER_UPDATED",
       title: `تحديث على الطلب #${order.orderCode}: ${statusLabel}`,
+      body: `تم التحديث بواسطة ${actorName}`,
       link: "/seller",
     });
     // عند الإتمام يُحتسب بيع للبائع
@@ -233,8 +232,6 @@ export function changeOrderStatus(
 
   // عند الإتمام: تعليم المنتجات المطلوبة بالكامل كمباعة
   if (status === "COMPLETED") {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { setProductStatus } = require("./models/products") as typeof import("./models/products");
     for (const item of order.items) {
       const product = getProductRow(item.productId);
       if (product && product.status === "ACTIVE" && item.quantity >= product.quantity) {

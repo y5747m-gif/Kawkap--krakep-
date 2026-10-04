@@ -7,15 +7,16 @@ import {
 import { notify } from "@/lib/models/misc";
 import { all } from "@/lib/db";
 import { sanitizeText, isValidPrice, isValidQuantity } from "@/lib/validate";
-import { PRICING_TYPE_MAP, CONDITION_MAP, MAX_PRODUCT_IMAGES, SITE_NAME } from "@/lib/constants";
+import { PRICING_TYPE_MAP, CONDITION_MAP, MAX_PRODUCT_IMAGES } from "@/lib/constants";
 import type { PricingType, ProductCondition, ProductStatus } from "@/lib/types";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /** GET — تفاصيل منتج */
 export async function GET(req: NextRequest, { params }: Ctx) {
-  const viewer = getCurrentUser();
-  const product = getProductDetail(params.id, viewer?.id);
+  const { id } = await params;
+  const viewer = await getCurrentUser();
+  const product = getProductDetail(id, viewer?.id);
   if (!product) return jsonError("المنتج غير موجود", 404);
   return jsonOk({ product });
 }
@@ -26,10 +27,11 @@ export async function GET(req: NextRequest, { params }: Ctx) {
  *  - الإدارة: قبول / رفض / إخفاء / تمييز / إيقاف
  */
 export async function PATCH(req: NextRequest, { params }: Ctx) {
-  const user = getCurrentUser();
+  const { id } = await params;
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا", 401);
 
-  const product = getProductRow(params.id);
+  const product = getProductRow(id);
   if (!product) return jsonError("المنتج غير موجود", 404);
 
   const isOwner = product.sellerId === user.id;
@@ -149,10 +151,11 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
 /** DELETE — حذف الإعلان (البائع أو الإدارة) */
 export async function DELETE(req: NextRequest, { params }: Ctx) {
-  const user = getCurrentUser();
+  const { id } = await params;
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا", 401);
 
-  const product = getProductRow(params.id);
+  const product = getProductRow(id);
   if (!product) return jsonError("المنتج غير موجود", 404);
 
   if (product.sellerId !== user.id && !isAdmin(user)) {

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   Search, Bell, ShoppingCart, User as UserIcon, LayoutDashboard, LogOut,
-  Store, PackageCheck, ChevronDown, Menu, X, MapPin, Sparkles,
+  Store, PackageCheck, ChevronDown, Menu, X,
 } from "lucide-react";
 import Logo from "./Logo";
 import SellButton from "./SellButton";
@@ -60,7 +60,8 @@ export default function Header({ user, cartCount: initialCart }: { user: Current
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
+    router.push("/");
+    router.refresh();
   }
 
   if (pathname?.startsWith("/admin")) return null; // لوحة الإدارة لها تخطيطها الخاص

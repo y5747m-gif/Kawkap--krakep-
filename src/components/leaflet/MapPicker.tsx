@@ -7,6 +7,23 @@ import "leaflet/dist/leaflet.css";
 import { Crosshair } from "lucide-react";
 import { GOVERNORATES } from "@/lib/constants";
 
+function ClickCatcher({ onChange }: { onChange: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onChange(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
+
+function Recenter({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([lat, lng], Math.max(map.getZoom(), 11));
+  }, [lat, lng, map]);
+  return null;
+}
+
 /** منتقي الموقع على الخريطة — يستخدمه نموذج إضافة المنتج */
 export default function MapPicker({
   lat, lng, gov, onChange,
@@ -20,23 +37,6 @@ export default function MapPicker({
   const center: [number, number] =
     lat != null && lng != null ? [lat, lng] : govDef ? [govDef.lat, govDef.lng] : [30.0444, 31.2357];
 
-  function ClickCatcher() {
-    useMapEvents({
-      click(e) {
-        onChange(e.latlng.lat, e.latlng.lng);
-      },
-    });
-    return null;
-  }
-
-  function Recenter({ c }: { c: [number, number] }) {
-    const map = useMap();
-    useEffect(() => {
-      map.setView(c, Math.max(map.getZoom(), 11));
-    }, [c[0], c[1], map]); // eslint-disable-line react-hooks/exhaustive-deps
-    return null;
-  }
-
   return (
     <div>
       <div className="relative overflow-hidden rounded-2xl border border-planet-200">
@@ -45,8 +45,8 @@ export default function MapPicker({
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <ClickCatcher />
-          <Recenter c={center} />
+          <ClickCatcher onChange={onChange} />
+          <Recenter lat={center[0]} lng={center[1]} />
           {lat != null && lng != null && (
             <Marker
               position={[lat, lng]}

@@ -10,11 +10,12 @@ import { formatNumber } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function CategoryPage({ params }: { params: { slug: string } }) {
-  const category = getCategoryBySlug(params.slug);
+export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const category = getCategoryBySlug(slug);
   if (!category) notFound();
 
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const { items, total } = searchProducts({
     categorySlug: category.slug,
     limit: 32,

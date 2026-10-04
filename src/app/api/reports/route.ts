@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const details = body.details ? sanitizeText(body.details, 500) : null;
     if (!productId || !reason) return jsonError("بيانات غير صحيحة");
 
-    const user = getCurrentUser();
+    const user = await getCurrentUser();
     createReport({ reporterId: user?.id ?? null, productId, reason, details });
     return jsonOk({ done: true });
   } catch (e) {

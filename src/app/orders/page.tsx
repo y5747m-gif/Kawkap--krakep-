@@ -12,7 +12,7 @@ export const metadata = { title: "طلباتي" };
 
 /** طلباتي كمشترٍ */
 export default async function OrdersPage() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return (

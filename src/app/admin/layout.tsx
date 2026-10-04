@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  LayoutDashboard, ClipboardList, Package, Users, Flag, Settings, ExternalLink, LogOut,
+  LayoutDashboard, ClipboardList, Package, Users, Flag, Settings, ExternalLink,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import AdminLogoutButton from "@/components/admin/LogoutButton";
@@ -20,7 +20,7 @@ const NAV = [
 
 /** لوحة الإدارة — للمالك فقط (مدير المنصة والمستلم المركزي للطلبات) */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login?next=/admin");
   if (!isAdmin(user)) redirect("/");
 

@@ -36,7 +36,7 @@ export function createOwnerOrderLink(order: OrderWithItems, baseUrl: string): st
 
 /** رسالة استفسار العميل عن طلبه (تُفتح على رقم المالك) */
 export function createOwnerInquiryLink(order: OrderWithItems, baseUrl: string): string {
-  const message = `🪐 ${SITE_NAME}\nاستفسار عن الطلب رقم #${order.orderCode}\nالاسم: ${order.customerName}\nالهاتف: ${order.customerPhone}`;
+  const message = `🪐 ${SITE_NAME}\nاستفسار عن الطلب رقم #${order.orderCode}\nالاسم: ${order.customerName}\nالهاتف: ${order.customerPhone}\nرابط الطلب: ${baseUrl}/orders/${order.orderCode}`;
   return createWhatsAppOrderLink(getOwnerWhatsappIntl(), message);
 }
 

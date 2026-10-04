@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, Trash2, Pause, Play, PenLine, Loader2, PackageSearch, TrendingDown } from "lucide-react";
+import { Eye, Trash2, Pause, Play, PenLine, Loader2, PackageSearch } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import { toast } from "./Toast";
-import { formatMoney, formatQuantity, formatUnitPrice, formatNumber, timeAgo } from "@/lib/format";
+import { formatQuantity, formatUnitPrice, formatNumber, timeAgo } from "@/lib/format";
 import type { ProductCardData } from "@/lib/types";
 
 /** كرت إعلاني في «أنا أبيع» — تعديل، إيقاف/تشغيل، حذف */
