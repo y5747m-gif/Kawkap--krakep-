@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import * as usersModel from "./models/users";
 import { unreadNotificationsCount } from "./models/misc";
 import type { CurrentUser } from "./types";
+import { normalizeEgyptianPhone } from "./validate";
 
 export const SESSION_COOKIE = "kk_session";
 
@@ -42,8 +43,10 @@ export async function startSession(userId: string): Promise<void> {
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     expires: new Date(expiresAt),
+    maxAge: 30 * 24 * 60 * 60,
   });
 }
 
@@ -90,7 +93,11 @@ export function registerUser(data: {
 
 export function loginUser(identifier: string, password: string): AuthResult {
   const id = identifier.trim();
-  const user = usersModel.getUserByPhone(id) || usersModel.getUserByEmail(id.toLowerCase());
+  // التسجيل يحفظ الرقم بصيغة مصرية موحدة؛ طبّع الإدخال هنا أيضًا حتى يقبل
+  // الأرقام العربية والصيغة الدولية ولا يعيد العميل إلى التسجيل بلا داعٍ.
+  const normalizedPhone = normalizeEgyptianPhone(id);
+  const user = (normalizedPhone ? usersModel.getUserByPhone(normalizedPhone) : null)
+    || usersModel.getUserByEmail(id.toLowerCase());
   if (!user) return { ok: false, error: "بيانات الدخول غير صحيحة" };
   const hash = usersModel.getUserPasswordHash(user.id);
   if (!hash || !verifyPassword(password, hash)) {

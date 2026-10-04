@@ -1,43 +1,66 @@
-/** شعار كوكب كراكيب — كوكب بحلقة مدارية وورقة (SVG) */
+/**
+ * شعار كوكب كراكيب — حرف «ك» عربي هندسي داخل كوكب ومدار ذهبي.
+ * SVG أصلي خفيف وواضح في المقاسات الصغيرة، بدون الاعتماد على صورة خارجية.
+ */
 export default function Logo({ size = 40, withText = true }: { size?: number; withText?: boolean }) {
   return (
     <span className="kk-logo inline-flex items-center gap-2.5" aria-label="كوكب كراكيب">
-      <svg className="kk-logo-svg" width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="kk-planet" x1="8" y1="6" x2="52" y2="56" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#2dd4bf" />
-            <stop offset="1" stopColor="#128266" />
-          </linearGradient>
-          <linearGradient id="kk-ring" x1="4" y1="30" x2="60" y2="30" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#fbbf24" />
-            <stop offset="0.5" stopColor="#f59e0b" />
-            <stop offset="1" stopColor="#fb923c" />
-          </linearGradient>
-        </defs>
-        {/* هالة */}
-        <circle cx="32" cy="32" r="30" fill="url(#kk-planet)" opacity="0.14" />
-        {/* الكوكب */}
-        <circle cx="32" cy="32" r="18.5" fill="url(#kk-planet)" />
-        {/* قارة على شكل ورقة */}
+      <svg
+        className="kk-logo-svg shrink-0"
+        width={size}
+        height={size}
+        viewBox="0 0 72 72"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        {/* جسم الكوكب المفتوح حول المدار */}
         <path
-          d="M36.5 20.5c-8.5 1.8-13.5 7-13.5 13.6 0 3.4 1.4 6.4 3.8 8.6 2.4-10.4 9-14.6 15.4-16.2-1.4-3.6-3.6-6-5.7-6z"
-          fill="#eafff5"
-          opacity="0.95"
+          d="M56.8 25.8A24 24 0 0 0 22.1 15.2 24 24 0 0 0 14.6 45.7"
+          stroke="#064E3B"
+          strokeWidth="8"
+          strokeLinecap="square"
         />
-        <circle cx="24.5" cy="39" r="3.2" fill="#eafff5" opacity="0.8" />
-        <circle cx="39.5" cy="38" r="2.2" fill="#eafff5" opacity="0.7" />
-        {/* الحلقة المدارية الذهبية */}
-        <g transform="rotate(-16 32 32)">
-          <ellipse className="kk-logo-ring" cx="32" cy="32" rx="29" ry="9.5" stroke="url(#kk-ring)" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeDasharray="130 24" />
-        </g>
-        {/* نجم صغير على المدار */}
-        <circle className="kk-logo-star" cx="55.5" cy="24" r="3" fill="#fbbf24" />
-        <circle className="kk-logo-star" cx="55.5" cy="24" r="5.5" fill="#fbbf24" opacity="0.3" />
+        <path
+          d="M19.1 53A24 24 0 0 0 58.4 35.2"
+          stroke="#064E3B"
+          strokeWidth="8"
+          strokeLinecap="square"
+        />
+
+        {/* حرف الكاف كعلامة هندسية */}
+        <path
+          d="M24 43h29V35.8c0-4.6-3.7-8.3-8.3-8.3H36l14.5-14.2"
+          stroke="#064E3B"
+          strokeWidth="7"
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+        />
+        <circle cx="25" cy="31.5" r="3.2" fill="#C89D3D" />
+
+        {/* المدار؛ جزؤه الأمامي يمر فوق الحرف */}
+        <path
+          d="M8.7 45.5C16.3 53 34.8 49.9 50.9 39.1 63 31 67.4 22.8 62 19.2"
+          stroke="#064E3B"
+          strokeWidth="3.3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M55.2 17.8c3.2-.4 5.7.1 7.3 1.5"
+          stroke="#C89D3D"
+          strokeWidth="3.3"
+          strokeLinecap="round"
+        />
       </svg>
+
       {withText && (
         <span className="leading-tight">
-          <span className="block text-lg font-extrabold text-planet-900">كوكب كراكيب</span>
-          <span className="block text-[10px] font-bold tracking-wide text-planet-500">حوّل كراكيبك إلى قيمة</span>
+          <span className="block whitespace-nowrap text-lg font-black text-planet-950">
+            كوكب <span className="text-planet-600">كراكيب</span>
+          </span>
+          <span className="block whitespace-nowrap text-[10px] font-bold tracking-wide text-planet-500">
+            كل شيء يستحق فرصة ثانية
+          </span>
         </span>
       )}
     </span>

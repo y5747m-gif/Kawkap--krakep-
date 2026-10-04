@@ -2,16 +2,16 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { UserPlus, Loader2, Phone, KeyRound, Mail, User as UserIcon, MapPin } from "lucide-react";
 import Logo from "@/components/Logo";
 import { toast } from "@/components/Toast";
 import { GOVERNORATES } from "@/lib/constants";
 
 function RegisterForm() {
-  const router = useRouter();
   const sp = useSearchParams();
-  const next = sp.get("next") || "/account";
+  const requestedNext = sp.get("next");
+  const next = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/account";
   const [form, setForm] = useState({ name: "", phone: "", email: "", password: "", gov: "" });
   const [loading, setLoading] = useState(false);
 
@@ -30,8 +30,9 @@ function RegisterForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast(`تم إنشاء حسابك — أهلًا ${data.user.name}!`, "success");
-      router.push(next);
-      router.refresh();
+      // تنقّل كامل حتى يقرأ الـ Server Component كوكي الجلسة الجديدة فورًا؛
+      // push + refresh كانا يتسابقان أحيانًا فيعيدان العميل لنموذج الدخول.
+      window.location.assign(next);
     } catch (err) {
       toast(err instanceof Error ? err.message : "حدث خطأ", "error");
       setLoading(false);
