@@ -3,10 +3,13 @@
  * WhatsApp Utility — كوكب كراكيب (جهة الخادم)
  * ============================================================
  * الخدمة المستقلة لكل ما يتعلق بواتساب:
- *   generateOrderWhatsAppMessage() — بناء رسالة الطلب الديناميكية
- *   createWhatsAppOrderLink()      — تجهيز رابط wa.me
- *   openOwnerWhatsApp()            — فتح محادثة المالك (جهة العميل)
- *   openCustomerWhatsApp()         — فتح محادثة العميل (من لوحة الإدارة)
+ *   generateOrderWhatsAppMessage()   — بناء رسالة الطلب الديناميكية
+ *   generateListingWhatsAppMessage() — بناء رسالة «أريد بيع هذا الشيء»
+ *   createWhatsAppOrderLink()        — تجهيز رابط wa.me
+ *   createOwnerOrderLink()           — طلب شراء → واتساب المالك
+ *   createOwnerListingLink()         — طلب بيع (إعلان جديد) → واتساب المالك
+ *   createOwnerInquiryLink()         — استفسار العميل → واتساب المالك
+ *   createOwnerContactLink()         — تواصل عام → واتساب المالك
  *
  * رقم المالك يأتي من الإعدادات المركزية (settings.ts) في مكان واحد فقط،
  * القيمة الافتراضية 01013178718 وتُستخدم في الروابط بالصيغة الدولية +201013178718.
@@ -15,29 +18,54 @@
  */
 import { getOwnerWhatsappIntl } from "./settings";
 import { toWhatsAppIntl } from "./validate";
-import { generateOrderWhatsAppMessage as buildMessage } from "./whatsapp-message";
-import { SITE_NAME } from "./constants";
+import {
+  generateOrderWhatsAppMessage as buildOrderMessage,
+  generateListingWhatsAppMessage as buildListingMessage,
+  generateInquiryMessage as buildInquiryMessage,
+  generateContactMessage as buildContactMessage,
+  type ListingMessageData,
+} from "./whatsapp-message";
 import type { OrderWithItems } from "./types";
 
-export { generateOrderWhatsAppMessage } from "./whatsapp-message";
+export {
+  generateOrderWhatsAppMessage,
+  generateListingWhatsAppMessage,
+  generateCustomerMessage,
+  generateInquiryMessage,
+  generateContactMessage,
+} from "./whatsapp-message";
+export type { ListingMessageData } from "./whatsapp-message";
 
 /** رابط WhatsApp جاهز لأي رقم بالصيغة الدولية (أرقام فقط) */
 export function createWhatsAppOrderLink(phoneIntl: string, message: string): string {
   return `https://wa.me/${phoneIntl}?text=${encodeURIComponent(message)}`;
 }
 
-/** رابط محادثة المالك برسالة طلب مُجهزة — يُبنى من الإعدادات المركزية */
+/** رابط محادثة المالك برسالة طلب شراء مُجهزة — يُبنى من الإعدادات المركزية */
 export function createOwnerOrderLink(order: OrderWithItems, baseUrl: string): string {
   const firstProduct = order.items[0];
   const link = firstProduct ? `${baseUrl}/products/${firstProduct.productId}` : undefined;
-  const message = buildMessage(order, link);
+  const message = buildOrderMessage(order, link);
   return createWhatsAppOrderLink(getOwnerWhatsappIntl(), message);
+}
+
+/**
+ * رابط محادثة المالك برسالة «طلب بيع» — تُرسل تلقائيًا عندما يضغط
+ * العميل «إرسال الطلب» في معالج البيع.
+ */
+export function createOwnerListingLink(data: ListingMessageData): string {
+  return createWhatsAppOrderLink(getOwnerWhatsappIntl(), buildListingMessage(data));
 }
 
 /** رسالة استفسار العميل عن طلبه (تُفتح على رقم المالك) */
 export function createOwnerInquiryLink(order: OrderWithItems, baseUrl: string): string {
-  const message = `🪐 ${SITE_NAME}\nاستفسار عن الطلب رقم #${order.orderCode}\nالاسم: ${order.customerName}\nالهاتف: ${order.customerPhone}\nرابط الطلب: ${baseUrl}/orders/${order.orderCode}`;
+  const message = buildInquiryMessage(order, `${baseUrl}/orders/${order.orderCode}`);
   return createWhatsAppOrderLink(getOwnerWhatsappIntl(), message);
+}
+
+/** رابط تواصل عام مع المالك (زر واتساب العائم) */
+export function createOwnerContactLink(pageUrl?: string): string {
+  return createWhatsAppOrderLink(getOwnerWhatsappIntl(), buildContactMessage(pageUrl));
 }
 
 /** تحويل أي صيغة رقم إلى الصيغة الدولية لروابط wa.me */

@@ -17,7 +17,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/85 shadow-soft backdrop-blur transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lift"
+      className="group spot sheen relative flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/85 shadow-soft backdrop-blur transition-all duration-300 hover:-translate-y-1.5 hover:border-planet-200 hover:shadow-glowLg"
     >
       {/* الصورة */}
       <div className="relative aspect-[4/3] overflow-hidden bg-planet-50">
@@ -109,7 +109,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
           <span>{timeAgo(product.createdAt)}</span>
         </div>
 
-        <span className="btn-primary w-full px-3 py-2.5 text-sm">التفاصيل</span>
+        <span className="btn-primary w-full px-3 py-2.5 text-sm transition-transform duration-300 group-hover:scale-[1.02]">التفاصيل</span>
       </div>
     </Link>
   );

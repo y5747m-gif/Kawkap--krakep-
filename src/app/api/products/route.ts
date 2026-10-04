@@ -1,11 +1,13 @@
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { jsonOk, jsonError } from "@/lib/http";
+import { jsonOk, jsonError, getBaseUrl } from "@/lib/http";
 import {
   searchProducts, createProduct, getCategoryBySlug, type ProductQuery,
 } from "@/lib/models/products";
 import { requiresApproval } from "@/lib/settings";
 import { notify } from "@/lib/models/misc";
+import { createOwnerListingLink, generateListingWhatsAppMessage, type ListingMessageData } from "@/lib/whatsapp";
+import { sendOwnerWhatsAppMessage, isAutoSendEnabled } from "@/lib/whatsapp-send";
 import { sanitizeText, isValidPrice, isValidQuantity } from "@/lib/validate";
 import { PRICING_TYPE_MAP, CONDITION_MAP, MAX_PRODUCT_IMAGES } from "@/lib/constants";
 import type { PricingType, ProductCondition, ProductStatus } from "@/lib/types";
@@ -131,7 +133,47 @@ export async function POST(req: NextRequest) {
       link: status === "ACTIVE" ? `/products/${product.id}` : "/account?tab=selling",
     });
 
-    return jsonOk({ product, status });
+    /* ------------------------------------------------------------------
+     * طلب البيع يصل تلقائيًا لواتساب المالك:
+     * الإعلان يُحفظ أولًا في قاعدة البيانات، ثم يُجهّز رابط واتساب
+     * برسالة منسّقة بكل تفاصيل المعروض ليفتحه العميل فورًا.
+     * ------------------------------------------------------------------ */
+    const baseUrl = getBaseUrl(req);
+    const listingMessage: ListingMessageData = {
+      code: product.code,
+      title: product.title,
+      categoryName: category.name,
+      condition: product.condition,
+      description: product.description,
+      price: product.price,
+      pricingType: product.pricingType,
+      quantity: product.quantity,
+      unit: product.unit,
+      negotiable: product.negotiable,
+      hasDelivery: product.hasDelivery,
+      gov: product.gov,
+      area: product.area,
+      latitude: product.latitude,
+      longitude: product.longitude,
+      imagesCount: images.length,
+      notes: product.notes,
+      contactPhone: product.contactPhone,
+      sellerName: user.name,
+      sellerPhone: user.phone,
+      status,
+      createdAt: product.createdAt,
+      productLink: `${baseUrl}/products/${product.id}`,
+      imageLinks: images.map((u) => `${baseUrl}${u}`),
+    };
+    const whatsappUrl = createOwnerListingLink(listingMessage);
+
+    // نسخة إضافية للمالك عبر WhatsApp Cloud API إن كانت مفعّلة في البيئة
+    if (isAutoSendEnabled()) {
+      const text = generateListingWhatsAppMessage(listingMessage);
+      after(() => sendOwnerWhatsAppMessage(text));
+    }
+
+    return jsonOk({ product, status, whatsappUrl });
   } catch (e) {
     console.error(e);
     return jsonError("تعذر نشر الإعلان، حاول مرة أخرى", 500);

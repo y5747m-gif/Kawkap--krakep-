@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft, ChevronRight, Camera, ClipboardList, MapPin, FileCheck2, Loader2,
   CheckCircle2, Package, Tag, Banknote, Scale, HandCoins, Truck,
-  Sparkles, PenLine,
+  PenLine, Send,
 } from "lucide-react";
 import ImageUploader, { type UploadedImage } from "./ImageUploader";
 import CategoryIcon from "./CategoryIcon";
+import WhatsAppIcon from "./WhatsAppIcon";
 import { MapPicker } from "@/components/leaflet/MapClient";
 import { toast } from "./Toast";
 import {
@@ -81,6 +82,8 @@ export default function SellWizard({
     initial.latitude != null && initial.longitude != null ? { lat: initial.latitude, lng: initial.longitude } : null
   );
   const [publishing, setPublishing] = useState(false);
+  /** نافذة واتساب تُفتح لحظة الضغط (داخل حدث المستخدم) حتى لا يحجبها المتصفح */
+  const waWindow = useRef<Window | null>(null);
 
   const perUnit = pricingType === "PER_KG" || pricingType === "PER_PIECE";
 
@@ -131,6 +134,11 @@ export default function SellWizard({
   }
 
   async function publish() {
+    // فتح نافذة واتساب مبكرًا (ضمن نقرة المستخدم) لتفادي حاجب النوافذ المنبثقة
+    if (!isEdit && typeof window !== "undefined") {
+      waWindow.current = window.open("", "_blank");
+    }
+
     setPublishing(true);
     try {
       const payload = {
@@ -159,17 +167,33 @@ export default function SellWizard({
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "تعذر نشر الإعلان");
+      if (!res.ok) {
+        waWindow.current?.close();
+        waWindow.current = null;
+        throw new Error(data.error || "تعذر إرسال الطلب");
+      }
 
       if (isEdit) {
         toast("تم تحديث إعلانك بنجاح", "success");
         router.push(`/products/${initial.productId}`);
-      } else if (data.status === "PENDING") {
-        toast("تم إرسال إعلانك للمراجعة — سيظهر بعد موافقة الإدارة", "success");
+        return;
+      }
+
+      // ------- الطلب يصل تلقائيًا لواتساب مالك المنصة -------
+      if (data.whatsappUrl) {
+        if (waWindow.current && !waWindow.current.closed) {
+          waWindow.current.location.href = data.whatsappUrl;
+        } else {
+          window.open(data.whatsappUrl, "_blank", "noopener");
+        }
+      }
+
+      if (data.status === "PENDING") {
+        toast("تم إرسال طلبك للإدارة عبر واتساب — سيظهر الإعلان بعد المراجعة", "success");
         router.push("/account?tab=selling");
       } else {
-        toast("تم نشر إعلانك بنجاح", "success");
-        router.push(`/products/${data.product.id}`);
+        toast("تم نشر إعلانك ووصل الطلب لإدارة كوكب كراكيب على واتساب", "success");
+        router.push(`/products/${data.product.id}?sent=1`);
       }
     } catch (e) {
       toast(e instanceof Error ? e.message : "حدث خطأ", "error");
@@ -549,11 +573,30 @@ export default function SellWizard({
               <button type="button" onClick={back} className="btn-outline flex-1 px-6 py-4 text-base">
                 <PenLine size={17} /> تعديل
               </button>
-              <button type="button" onClick={publish} disabled={publishing} className="btn-sell flex-[2] px-6 py-4 text-base">
-                {publishing ? <Loader2 size={19} className="animate-spin" /> : <Sparkles size={19} />}
-                {isEdit ? "حفظ التعديلات" : "نشر الإعلان"}
+              <button
+                type="button"
+                onClick={publish}
+                disabled={publishing}
+                className={`flex-[2] px-6 py-4 text-base ${isEdit ? "btn-sell" : "btn-whatsapp glow-pulse"}`}
+              >
+                {publishing ? (
+                  <Loader2 size={19} className="animate-spin" />
+                ) : isEdit ? (
+                  <Send size={19} />
+                ) : (
+                  <WhatsAppIcon size={20} />
+                )}
+                {isEdit ? "حفظ التعديلات" : "إرسال الطلب عبر واتساب"}
               </button>
             </div>
+
+            {!isEdit && (
+              <p className="flex items-start justify-center gap-2 rounded-2xl border border-planet-100 bg-planet-50/70 px-4 py-3 text-center text-[11px] font-bold leading-6 text-planet-600">
+                <WhatsAppIcon size={14} className="mt-0.5 shrink-0 text-[#25D366]" />
+                بضغطك «إرسال الطلب» يُحفظ إعلانك في النظام فورًا، ثم يُفتح واتساب برسالة
+                منسّقة بكل تفاصيل ما تبيعه تصل مباشرة لإدارة كوكب كراكيب لمتابعتها معك.
+              </p>
+            )}
           </div>
         )}
 

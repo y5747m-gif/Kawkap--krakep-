@@ -11,17 +11,25 @@ import CategoryIcon from "@/components/CategoryIcon";
 import ProductCard from "@/components/ProductCard";
 import SectionHeader from "@/components/SectionHeader";
 import { OrderNowButton, ContactSellerButton, ShareButton, ReportButton } from "@/components/ProductActions";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 import { getCurrentUser } from "@/lib/auth";
 import { getProductDetail, incrementViews, searchProducts } from "@/lib/models/products";
 import { listAddresses } from "@/lib/models/users";
 import { formatQuantity, formatUnitPrice, formatDate, formatNumber } from "@/lib/format";
 import { CONDITION_MAP } from "@/lib/constants";
 import { formatDistance } from "@/lib/geo";
+import { createOwnerListingLink } from "@/lib/whatsapp";
+import { getBaseUrl } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function ProductPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ sent?: string }>;
+}) {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
   const user = await getCurrentUser();
   const product = getProductDetail(id, user?.id);
 
@@ -43,6 +51,37 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const distance = formatDistance(product.distanceKm ?? null);
   const contactPhone = product.contactPhone || product.sellerPhone;
 
+  // بعد إرسال الإعلان من معالج البيع: تأكيد وصول الطلب لواتساب الإدارة
+  // (ورابط احتياطي لإعادة الإرسال لو حجب المتصفح النافذة المنبثقة)
+  const justSent = sp.sent === "1" && isOwner;
+  const resendUrl = justSent
+    ? createOwnerListingLink({
+        code: product.code,
+        title: product.title,
+        categoryName: product.categoryName,
+        condition: product.condition,
+        description: product.description,
+        price: product.price,
+        pricingType: product.pricingType,
+        quantity: product.quantity,
+        unit: product.unit,
+        negotiable: product.negotiable,
+        hasDelivery: product.hasDelivery,
+        gov: product.gov,
+        area: product.area,
+        latitude: product.latitude,
+        longitude: product.longitude,
+        imagesCount: product.imagesCount,
+        notes: product.notes,
+        contactPhone: product.contactPhone,
+        sellerName: product.sellerName,
+        sellerPhone: product.sellerPhone,
+        status: product.status,
+        createdAt: product.createdAt,
+        productLink: `${getBaseUrl()}/products/${product.id}`,
+      })
+    : null;
+
   const orderProduct = {
     id: product.id,
     title: product.title,
@@ -58,6 +97,29 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-10">
+      {/* تأكيد إرسال طلب البيع إلى واتساب الإدارة */}
+      {justSent && resendUrl && (
+        <div className="fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#128c7e] via-planet-700 to-planet-900 p-6 text-center text-white shadow-lift">
+          <div className="pointer-events-none absolute -top-16 start-1/4 h-48 w-48 rounded-full bg-tealx-400/30 blur-3xl" />
+          <span className="relative mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white/15 backdrop-blur">
+            <WhatsAppIcon size={34} />
+          </span>
+          <h2 className="relative text-xl font-black">تم إرسال طلبك إلى إدارة كوكب كراكيب</h2>
+          <p className="relative mx-auto mt-2 max-w-lg text-sm leading-7 text-white/80">
+            إعلانك محفوظ في النظام، ووصلت تفاصيله كاملة على واتساب الإدارة لمتابعته معك.
+            لو لم يفتح واتساب تلقائيًا، أعد الإرسال من الزر بالأسفل.
+          </p>
+          <a
+            href={resendUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-whatsapp relative mt-5 px-6 py-3.5 text-sm"
+          >
+            <WhatsAppIcon size={17} /> إعادة إرسال الطلب على واتساب
+          </a>
+        </div>
+      )}
+
       {/* مسار التنقل */}
       <nav className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-planet-500">
         <Link href="/" className="hover:text-planet-700">الرئيسية</Link>
