@@ -4,17 +4,18 @@ import { jsonOk, jsonError } from "@/lib/http";
 import { changeOrderStatus } from "@/lib/orders";
 import type { OrderStatus } from "@/lib/types";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /** PATCH — تحديث حالة الطلب من لوحة الإدارة */
 export async function PATCH(req: NextRequest, { params }: Ctx) {
-  const user = getCurrentUser();
+  const { id } = await params;
+  const user = await getCurrentUser();
   if (!user || !isAdmin(user)) return jsonError("صلاحيات غير كافية", 403);
 
   try {
     const body = await req.json();
     const status = String(body.status ?? "") as OrderStatus;
-    const order = changeOrderStatus(params.id, status, user.name);
+    const order = changeOrderStatus(id, status, user.name);
     if (!order) return jsonError("الطلب غير موجود", 404);
     return jsonOk({ order });
   } catch (e) {

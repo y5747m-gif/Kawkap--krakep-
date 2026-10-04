@@ -4,7 +4,10 @@ out/
 build/
 dist/
 
-# قاعدة البيانات المحلية (SQLite) — لا تُرفع للمستودع
+# قاعدة البيانات التجريبية الأساسية app.db تُضمَّن للنشر، أما ملفات SQLite
+# المؤقتة فلا تُرفع (كانت app.db-shm سببًا في تضمين حالة تشغيل محلية بالمستودع).
+data/*.db-*
+data/*.db-journal
 prisma/dev.db
 prisma/dev.db-journal
 

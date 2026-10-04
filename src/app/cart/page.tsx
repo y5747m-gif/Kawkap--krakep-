@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "سلة المشتريات" };
 
 export default async function CartPage() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return (

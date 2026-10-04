@@ -14,15 +14,16 @@ import { OrderNowButton, ContactSellerButton, ShareButton, ReportButton } from "
 import { getCurrentUser } from "@/lib/auth";
 import { getProductDetail, incrementViews, searchProducts } from "@/lib/models/products";
 import { listAddresses } from "@/lib/models/users";
-import { formatMoney, formatQuantity, formatUnitPrice, formatDate, formatNumber } from "@/lib/format";
+import { formatQuantity, formatUnitPrice, formatDate, formatNumber } from "@/lib/format";
 import { CONDITION_MAP } from "@/lib/constants";
 import { formatDistance } from "@/lib/geo";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductPage({ params }: { params: { id: string } }) {
-  const user = getCurrentUser();
-  const product = getProductDetail(params.id, user?.id);
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await getCurrentUser();
+  const product = getProductDetail(id, user?.id);
 
   if (!product || (product.status === "REJECTED" && user?.id !== product.sellerId && user?.role !== "ADMIN")) {
     notFound();

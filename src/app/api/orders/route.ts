@@ -12,7 +12,7 @@ import type { DeliveryMethod } from "@/lib/types";
  * الطلب محفوظ دائمًا حتى لو لم يرسل العميل رسالة الواتساب.
  */
 export async function POST(req: NextRequest) {
-  const viewer = getCurrentUser();
+  const viewer = await getCurrentUser();
   try {
     const body = await req.json();
     const result = createOrder(
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
 /** GET — طلباتي كمشترٍ */
 export async function GET() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا", 401);
   return jsonOk({ orders: listBuyerOrders(user.id) });
 }

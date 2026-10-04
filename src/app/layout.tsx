@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const cart = user ? cartCount(user.id) : 0;
 
   return (
@@ -40,6 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <main className="mx-auto w-full max-w-7xl px-3 pb-28 pt-4 sm:px-5 md:pb-16">{children}</main>
         <Footer />
         <BottomNav />
+        <ToastHost />
       </body>
     </html>
   );

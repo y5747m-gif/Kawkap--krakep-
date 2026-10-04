@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const result = loginUser(identifier, password);
     if (!result.ok) return jsonError(result.error!);
 
-    startSession(result.user!.id);
+    await startSession(result.user!.id);
     return jsonOk({ user: result.user });
   } catch (e) {
     console.error(e);

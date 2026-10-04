@@ -10,7 +10,7 @@ import { sanitizeText } from "@/lib/validate";
  * يُمنع التقييم لمنتج لم يتم طلبه فعليًا أو قبل اكتمال الطلب.
  */
 export async function POST(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا", 401);
 
   try {

@@ -6,7 +6,7 @@ import { sanitizeText, normalizeEgyptianPhone, isValidEmail } from "@/lib/valida
 
 /** PATCH — تحديث بيانات الحساب (الاسم، الصورة، الهاتف، البريد، الموقع، كلمة المرور) */
 export async function PATCH(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا", 401);
 
   try {

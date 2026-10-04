@@ -1,18 +1,18 @@
 import { NextRequest } from "next/server";
 import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/http";
-import { getSetting, setSetting, getAllSettings, getOwnerWhatsappIntl } from "@/lib/settings";
+import { setSetting, getAllSettings, getOwnerWhatsappIntl } from "@/lib/settings";
 import { SETTING_KEYS } from "@/lib/constants";
 import { normalizeEgyptianPhone } from "@/lib/validate";
 
-function guard() {
-  const user = getCurrentUser();
+async function guard() {
+  const user = await getCurrentUser();
   if (!user || !isAdmin(user)) return null;
   return user;
 }
 
 export async function GET() {
-  if (!guard()) return jsonError("صلاحيات غير كافية", 403);
+  if (!(await guard())) return jsonError("صلاحيات غير كافية", 403);
   return jsonOk({ settings: getAllSettings(), ownerWhatsappIntl: getOwnerWhatsappIntl() });
 }
 
@@ -23,7 +23,7 @@ export async function GET() {
  *  - وضع البيانات التجريبية (DEMO_MODE)
  */
 export async function PUT(req: NextRequest) {
-  if (!guard()) return jsonError("صلاحيات غير كافية", 403);
+  if (!(await guard())) return jsonError("صلاحيات غير كافية", 403);
   try {
     const body = await req.json();
 

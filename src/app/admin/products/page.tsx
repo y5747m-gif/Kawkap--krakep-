@@ -13,15 +13,16 @@ const ALL_STATUSES: ProductStatus[] = ["PENDING", "ACTIVE", "PAUSED", "REJECTED"
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; q?: string };
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
-  const validStatus = searchParams.status && PRODUCT_STATUS_MAP[searchParams.status]
-    ? (searchParams.status as ProductStatus)
+  const sp = await searchParams;
+  const validStatus = sp.status && PRODUCT_STATUS_MAP[sp.status]
+    ? (sp.status as ProductStatus)
     : undefined;
 
   const { items, total } = searchProducts({
     statuses: validStatus ? [validStatus] : ALL_STATUSES,
-    q: searchParams.q?.trim() || undefined,
+    q: sp.q?.trim() || undefined,
     limit: 60,
   });
 
@@ -33,7 +34,7 @@ export default async function AdminProductsPage({
           مراجعة الإعلانات الجديدة، قبولها أو رفضها، تمييزها أو إخفائها
         </p>
       </div>
-      <AdminProductsTable initialProducts={items} total={total} initialStatus={validStatus ?? "ALL"} initialQ={searchParams.q ?? ""} />
+      <AdminProductsTable initialProducts={items} total={total} initialStatus={validStatus ?? "ALL"} initialQ={sp.q ?? ""} />
     </div>
   );
 }

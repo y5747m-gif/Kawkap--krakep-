@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   Loader2, ShoppingBag, MapPin, LocateFixed, NotebookPen, Truck, Store, Handshake,
 } from "lucide-react";
-import WhatsAppIcon from "./WhatsAppIcon";
 import { toast } from "./Toast";
 import { formatMoney, formatQuantity, formatUnitPrice } from "@/lib/format";
 import { computeLineTotal } from "@/lib/pricing";
@@ -82,7 +81,7 @@ export default function OrderForm({
     );
   }
 
-  function useSavedAddress(a: Address) {
+  function applySavedAddress(a: Address) {
     setGov(a.gov);
     setArea(a.area ?? "");
     setAddress(a.details ?? "");
@@ -286,7 +285,7 @@ export default function OrderForm({
             <button
               key={a.id}
               type="button"
-              onClick={() => useSavedAddress(a)}
+              onClick={() => applySavedAddress(a)}
               className="chip border-planet-200 bg-planet-50 text-planet-700 hover:border-planet-400"
             >
               <MapPin size={12} /> {a.label}: {a.gov} {a.area ? `— ${a.area}` : ""}

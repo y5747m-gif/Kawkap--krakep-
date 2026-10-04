@@ -10,12 +10,13 @@ export const metadata = { title: "إدارة الطلبات" };
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: { status?: string; q?: string };
+  searchParams: Promise<{ status?: string; q?: string }>;
 }) {
-  const status = searchParams.status && ORDER_STATUSES.some((s) => s.key === searchParams.status)
-    ? searchParams.status
+  const sp = await searchParams;
+  const status = sp.status && ORDER_STATUSES.some((s) => s.key === sp.status)
+    ? sp.status
     : undefined;
-  const q = searchParams.q?.trim() || undefined;
+  const q = sp.q?.trim() || undefined;
 
   const { orders, total } = listOrdersForAdmin({ status, q, limit: 100 });
 

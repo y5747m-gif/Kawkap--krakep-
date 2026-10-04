@@ -6,13 +6,13 @@ import {
 } from "@/lib/models/products";
 
 export async function GET() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonOk({ items: [], count: 0 });
   return jsonOk({ items: getCartItems(user.id), count: cartCount(user.id) });
 }
 
 export async function POST(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول لإضافة المنتجات للسلة", 401);
   try {
     const body = await req.json();
@@ -23,13 +23,13 @@ export async function POST(req: NextRequest) {
     }
     addToCart(user.id, productId, Math.min(quantity, 100000));
     return jsonOk({ count: cartCount(user.id) });
-  } catch (e) {
+  } catch {
     return jsonError("تعذر إضافة المنتج للسلة", 400);
   }
 }
 
 export async function PATCH(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا", 401);
   const body = await req.json();
   const itemId = String(body.itemId ?? "");
@@ -40,7 +40,7 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا", 401);
   const sp = req.nextUrl.searchParams;
   if (sp.get("clear") === "1") {

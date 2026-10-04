@@ -4,7 +4,7 @@ import { jsonOk, jsonError } from "@/lib/http";
 import { listNotifications, markAllNotificationsRead, unreadNotificationsCount } from "@/lib/models/misc";
 
 export async function GET(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonOk({ notifications: [], unread: 0 });
   const countOnly = req.nextUrl.searchParams.get("count") === "1";
   if (countOnly) return jsonOk({ unread: unreadNotificationsCount(user.id) });
@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
   });
 }
 
-export async function PATCH(req: NextRequest) {
-  const user = getCurrentUser();
+export async function PATCH() {
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا", 401);
   markAllNotificationsRead(user.id);
   return jsonOk({ done: true });

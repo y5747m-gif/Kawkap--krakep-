@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get("q") || "").trim();
   if (q.length < 2) return jsonOk({ products: [], categories: [] });
 
-  const viewer = getCurrentUser();
+  const viewer = await getCurrentUser();
   const { items } = searchProducts({
     q,
     limit: 6,

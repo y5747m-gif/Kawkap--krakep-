@@ -21,17 +21,18 @@ export const dynamic = "force-dynamic";
 export default async function OrderPage({
   params, searchParams,
 }: {
-  params: { code: string };
-  searchParams: { new?: string };
+  params: Promise<{ code: string }>;
+  searchParams: Promise<{ new?: string }>;
 }) {
-  const order = getOrderByCode(params.code);
+  const [{ code }, sp] = await Promise.all([params, searchParams]);
+  const order = getOrderByCode(code);
   if (!order) notFound();
 
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   const baseUrl = getBaseUrl();
   const whatsappUrl = createOwnerOrderLink(order, baseUrl);
   const inquiryUrl = createOwnerInquiryLink(order, baseUrl);
-  const isNew = searchParams?.new === "1";
+  const isNew = sp.new === "1";
   const isBuyer = user?.id === order.buyerId;
   const canReview = isBuyer && order.status === "COMPLETED" && !order.review;
 

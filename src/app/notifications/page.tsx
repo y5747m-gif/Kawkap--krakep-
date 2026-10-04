@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   Bell, Send, CheckCircle2, XCircle, PackageCheck, RefreshCw, PartyPopper,
-  TrendingDown, Megaphone, Inbox, CheckCheck,
+  TrendingDown, Megaphone, Inbox,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import MarkAllReadButton from "@/components/MarkAllReadButton";
@@ -28,7 +28,7 @@ const TYPE_META: Record<NotificationType, { icon: typeof Bell; classes: string }
 };
 
 export default async function NotificationsPage() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     return (

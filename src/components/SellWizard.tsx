@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft, ChevronRight, Camera, ClipboardList, MapPin, FileCheck2, Loader2,
-  CheckCircle2, Package, Tag, FileText, Banknote, Scale, HandCoins, Truck, Phone,
-  Star, Sparkles, PenLine,
+  CheckCircle2, Package, Tag, Banknote, Scale, HandCoins, Truck,
+  Sparkles, PenLine,
 } from "lucide-react";
 import ImageUploader, { type UploadedImage } from "./ImageUploader";
 import CategoryIcon from "./CategoryIcon";

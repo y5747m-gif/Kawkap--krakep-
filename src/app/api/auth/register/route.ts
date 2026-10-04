@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const result = registerUser({ name, phone, email: email || undefined, password, gov, area });
     if (!result.ok) return jsonError(result.error!);
 
-    startSession(result.user!.id);
+    await startSession(result.user!.id);
     return jsonOk({ user: result.user });
   } catch (e) {
     console.error(e);

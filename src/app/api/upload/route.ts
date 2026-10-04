@@ -15,7 +15,7 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 /** رفع صور المنتجات والصور الشخصية — حتى 8 صور للمنتج (يُفحص عدد الصور عند حفظ المنتج) */
 export async function POST(req: NextRequest) {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) return jsonError("سجل الدخول أولًا", 401);
 
   try {

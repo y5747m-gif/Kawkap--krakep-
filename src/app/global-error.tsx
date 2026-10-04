@@ -50,6 +50,8 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
             >
               إعادة المحاولة
             </button>
+            {/* الجذر قد يكون منهارًا، لذلك نتجنب الاعتماد على مكوّن Link هنا. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/"
               style={{

@@ -13,7 +13,7 @@ export const metadata = { title: "إتمام الطلب" };
 
 /** إتمام طلب السلة — طلب رئيسي واحد مع طلبات فرعية لكل بائع */
 export default async function CheckoutPage() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login?next=/checkout");
 
   const items = getCartItems(user.id);

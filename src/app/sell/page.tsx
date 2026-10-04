@@ -8,7 +8,7 @@ export const metadata = { title: "اعرض شيئًا للبيع" };
 
 /** صفحة إضافة منتج للبيع — متاحة لأي عميل مسجل (العملاء هم البائعون) */
 export default async function SellPage() {
-  const user = getCurrentUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login?next=/sell");
 
   return (

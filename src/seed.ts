@@ -18,8 +18,8 @@ import { ensureLocations } from "./lib/models/misc";
 import { createUser } from "./lib/models/users";
 import { createOrderRecord, updateOrderStatus, insertReview } from "./lib/models/orders";
 import { setSetting } from "./lib/settings";
-import { CATEGORIES, SETTING_KEYS } from "./lib/constants";
-import type { PricingType, ProductCondition, DeliveryMethod } from "./lib/types";
+import { SETTING_KEYS } from "./lib/constants";
+import type { PricingType, ProductCondition } from "./lib/types";
 
 function banner(msg: string) {
   console.log("\n" + "=".repeat(50));
@@ -56,7 +56,7 @@ async function main() {
   // ---------- الصور الرمزية للمستخدمين التجريبيين ----------
   const avatarDir = path.join(process.cwd(), "public", "uploads", "demo", "avatars");
   fs.mkdirSync(avatarDir, { recursive: true });
-  function makeAvatar(name: string, from: string, to: string) {
+  function makeAvatar(name: string, fileName: string, from: string, to: string) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/>
@@ -64,9 +64,10 @@ async function main() {
   <rect width="128" height="128" rx="32" fill="url(#g)"/>
   <text x="64" y="82" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#ffffff" text-anchor="middle">${name.charAt(0)}</text>
 </svg>`;
-    const file = path.join(avatarDir, `${name}.svg`);
+    // اسم ASCII يمنع Next.js من وضع أحرف عربية داخل Link preload header.
+    const file = path.join(avatarDir, `${fileName}.svg`);
     fs.writeFileSync(file, svg);
-    return `/uploads/demo/avatars/${name}.svg`;
+    return `/uploads/demo/avatars/${fileName}.svg`;
   }
 
   // ---------- صور placeholder للمنتجات بدون صور ----------
@@ -90,7 +91,7 @@ async function main() {
   const hash = (p: string) => bcrypt.hashSync(p, 10);
 
   // حساب المالك / الإدارة
-  const admin = createUser({
+  createUser({
     name: "مالك كوكب كراكيب",
     phone: "01013178718",
     email: "owner@kawkap.krakeb",
@@ -106,7 +107,7 @@ async function main() {
     { name: "سارة عبد الله", phone: "01000000003", gov: "القاهرة", area: "المعادي", colors: ["#f59e0b", "#ea580c"] },
     { name: "مصطفى كامل", phone: "01000000004", gov: "الإسكندرية", area: "سموحة", colors: ["#8b5cf6", "#6366f1"] },
     { name: "هدى إبراهيم", phone: "01000000005", gov: "الشرقية", area: "الزقازيق", colors: ["#be185d", "#db2777"] },
-  ].map((u) => {
+  ].map((u, index) => {
     const user = createUser({
       name: u.name,
       phone: u.phone,
@@ -115,7 +116,7 @@ async function main() {
       gov: u.gov,
       area: u.area,
     });
-    const avatar = makeAvatar(u.name, u.colors[0], u.colors[1]);
+    const avatar = makeAvatar(u.name, `seller-${index + 1}`, u.colors[0], u.colors[1]);
     run("UPDATE profiles SET avatar_url = ? WHERE user_id = ?", avatar, user.id);
     return user;
   });
@@ -244,7 +245,7 @@ async function main() {
   });
   updateOrderStatus(order1.id, "PROCESSING");
 
-  const order2 = createOrderRecord({
+  createOrderRecord({
     orderCode: "KK-20261002-0001",
     buyerId: null,
     customerName: "سلمى محمود",

@@ -18,7 +18,7 @@ import { formatNumber } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const user = await Promise.resolve(getCurrentUser());
+  const user = await getCurrentUser();
   const categories = listCategories();
   const latest = searchProducts({ limit: 8, viewerId: user?.id });
   const featured = searchProducts({ limit: 4, featuredOnly: true, viewerId: user?.id });

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   User as UserIcon, Store, PackageCheck, Heart, MessagesSquare, Bell, Settings,
-  ChevronLeft, Star, TrendingDown, MapPin, MessagesSquare as ChatIcon,
+  ChevronLeft, TrendingDown, MapPin, MessagesSquare as ChatIcon,
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { myProducts, listFavorites, getSellerProductStats } from "@/lib/models/products";
@@ -35,9 +35,10 @@ const TABS = [
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: { tab?: string };
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const user = getCurrentUser();
+  const sp = await searchParams;
+  const user = await getCurrentUser();
   if (!user) {
     return (
       <EmptyState
@@ -49,7 +50,7 @@ export default async function AccountPage({
     );
   }
 
-  const tab = searchParams.tab && TABS.some((t) => t.key === searchParams.tab) ? searchParams.tab : "overview";
+  const tab = sp.tab && TABS.some((t) => t.key === sp.tab) ? sp.tab : "overview";
   const profile = getProfile(user.id);
   const products = myProducts(user.id);
   const stats = getSellerProductStats(user.id);
