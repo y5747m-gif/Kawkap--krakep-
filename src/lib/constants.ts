@@ -15,7 +15,12 @@ export const SETTING_KEYS = {
   OWNER_WHATSAPP: "OWNER_WHATSAPP_NUMBER",
   REQUIRE_APPROVAL: "REQUIRE_APPROVAL", // "true" = النشر بعد موافقة الإدارة
   DEMO_MODE: "DEMO_MODE", // "true" = إظهار البيانات التجريبية (للتطوير فقط)
+  /** خانات إضافية يضيفها المالك فتظهر لكل من يعرض شيئًا للبيع (JSON) */
+  CUSTOM_FIELDS: "CUSTOM_LISTING_FIELDS",
 } as const;
+
+/** الحد الأقصى للخانات الإضافية التي يضيفها المالك */
+export const MAX_OWNER_FIELDS = 10;
 
 export interface CategoryDef {
   slug: string;
@@ -140,6 +145,38 @@ export const DELIVERY_METHOD_MAP: Record<string, string> = {
 };
 
 export const UNITS = ["قطعة", "كجم", "طن", "لتر", "متر", "كرتونة", "شيكارة", "باليت"];
+
+/** وحدات الوزن المتاحة في مواصفات المنتج */
+export const WEIGHT_UNITS = ["كجم", "جرام", "طن", "رطل"];
+
+/**
+ * مواصفات إضافية جاهزة يقترحها المعالج على البائع بضغطة واحدة —
+ * ويمكنه كتابة أي مواصفة أخرى بنفسه (مفتاح + قيمة).
+ */
+export const SPEC_SUGGESTIONS = [
+  "القدرة (وات)",
+  "السعة",
+  "الجهد (فولت)",
+  "عدد القطع",
+  "المقاس",
+  "الطول",
+  "العرض",
+  "الارتفاع",
+  "درجة النقاء",
+  "سُمك المعدن",
+  "هل يعمل؟",
+  "يحتاج صيانة؟",
+  "الضمان",
+  "بلد الصنع",
+  "مدة الاستخدام",
+  "سبب البيع",
+];
+
+/** الحد الأقصى للمواصفات الإضافية الحرة في الإعلان الواحد */
+export const MAX_CUSTOM_SPECS = 12;
+
+/** اسم البائع الافتراضي عند النشر بدون حساب */
+export const GUEST_SELLER_NAME = "بائع ضيف";
 
 export const PRODUCT_STATUS_MAP: Record<string, { label: string; badge: string }> = {
   PENDING: { label: "بانتظار المراجعة", badge: "bg-amber-100 text-amber-800 border-amber-200" },

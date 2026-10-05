@@ -1,4 +1,5 @@
-import { ShoppingCart } from "lucide-react";
+import Link from "next/link";
+import { ShoppingCart, Zap, LogIn } from "lucide-react";
 import CartView from "@/components/CartView";
 import { getCurrentUser } from "@/lib/auth";
 import { getCartItems } from "@/lib/models/products";
@@ -16,9 +17,19 @@ export default async function CartPage() {
         <ShoppingCart size={44} className="mx-auto mb-4 text-planet-300" />
         <h1 className="text-lg font-extrabold text-planet-900">سلة المشتريات</h1>
         <p className="mt-1.5 text-sm leading-7 text-planet-600">
-          سجل الدخول لحفظ منتجاتك في السلة وإتمام الطلب بسهولة
+          مش لازم حساب عشان تطلب — افتح أي منتج واضغط «اطلب الآن» ويصل طلبك للإدارة فورًا.
+          <span className="mt-1 block text-xs font-bold text-planet-500">
+            السلة ميزة إضافية لأصحاب الحسابات لحفظ أكثر من منتج وطلبهم مرة واحدة.
+          </span>
         </p>
-        <a href="/login?next=/cart" className="btn-primary mt-5 px-6 py-3 text-sm">تسجيل الدخول</a>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Link href="/products" className="btn-primary px-6 py-3 text-sm">
+            <Zap size={16} /> اطلب مباشرة بدون حساب
+          </Link>
+          <Link href="/login?next=/cart" className="btn-outline px-6 py-3 text-sm">
+            <LogIn size={16} /> تسجيل الدخول (اختياري)
+          </Link>
+        </div>
       </div>
     );
   }

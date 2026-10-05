@@ -1,4 +1,5 @@
 /** المصادقة والجلسات — حساب واحد للعميل يكون مشتريًا وبائعًا في نفس الوقت */
+import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import * as usersModel from "./models/users";
@@ -7,6 +8,12 @@ import type { CurrentUser } from "./types";
 import { normalizeEgyptianPhone } from "./validate";
 
 export const SESSION_COOKIE = "kk_session";
+/**
+ * رمز الزائر — يسمح لمن ينشر إعلانًا بدون حساب أن يعود لتعديله أو حذفه
+ * من نفس المتصفح. لا يمنح أي صلاحية أخرى (ولا يرى به إعلانات غيره).
+ */
+export const GUEST_COOKIE = "kk_guest";
+const GUEST_COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // سنة
 
 export function hashPassword(password: string): string {
   return bcrypt.hashSync(password, 10);
@@ -34,6 +41,39 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 
 export function isAdmin(user: CurrentUser | null): boolean {
   return user?.role === "ADMIN";
+}
+
+/** رمز الزائر الحالي إن وُجد (للقراءة فقط — يعمل في أي مكان) */
+export async function getGuestToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(GUEST_COOKIE)?.value || null;
+}
+
+/** رمز الزائر مع إنشائه إن لم يوجد — تُستدعى داخل Route Handlers فقط */
+export async function ensureGuestToken(): Promise<string> {
+  const cookieStore = await cookies();
+  const existing = cookieStore.get(GUEST_COOKIE)?.value;
+  if (existing) return existing;
+
+  const token = `g_${randomUUID()}`;
+  cookieStore.set(GUEST_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: GUEST_COOKIE_MAX_AGE,
+  });
+  return token;
+}
+
+/** هل يملك هذا الزائر/المستخدم صلاحية التحكم في الإعلان؟ */
+export function canManageListing(
+  product: { sellerId: string; guestToken: string | null },
+  user: CurrentUser | null,
+  guestToken: string | null
+): boolean {
+  if (user && (product.sellerId === user.id || isAdmin(user))) return true;
+  return !!guestToken && !!product.guestToken && product.guestToken === guestToken;
 }
 
 /** إنشاء جلسة وضبط الكوكي — تُستدعى داخل Route Handlers فقط */

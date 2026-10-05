@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  LayoutDashboard, ClipboardList, Package, Users, Flag, Settings, ExternalLink,
+  LayoutDashboard, ClipboardList, Package, Users, Flag, Settings, ExternalLink, PlusCircle,
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import AdminLogoutButton from "@/components/admin/LogoutButton";
@@ -13,6 +13,7 @@ const NAV = [
   { href: "/admin", label: "نظرة عامة", icon: LayoutDashboard, exact: true },
   { href: "/admin/orders", label: "الطلبات", icon: ClipboardList },
   { href: "/admin/products", label: "المنتجات", icon: Package },
+  { href: "/admin/products/new", label: "إضافة منتج", icon: PlusCircle },
   { href: "/admin/users", label: "المستخدمون", icon: Users },
   { href: "/admin/reports", label: "البلاغات", icon: Flag },
   { href: "/admin/settings", label: "الإعدادات", icon: Settings },
@@ -21,7 +22,7 @@ const NAV = [
 /** لوحة الإدارة — للمالك فقط (مدير المنصة والمستلم المركزي للطلبات) */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/login?next=/admin");
+  if (!user) redirect("/owner?next=/admin");
   if (!isAdmin(user)) redirect("/");
 
   return (

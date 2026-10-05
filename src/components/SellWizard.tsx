@@ -4,8 +4,8 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft, ChevronRight, Camera, ClipboardList, MapPin, FileCheck2, Loader2,
-  CheckCircle2, Package, Tag, Banknote, Scale, HandCoins, Truck,
-  PenLine, Send,
+  CheckCircle2, Package, Tag, Banknote, Scale, HandCoins, Truck, ListChecks,
+  PenLine, Send, Plus, X, UserRound, Phone,
 } from "lucide-react";
 import ImageUploader, { type UploadedImage } from "./ImageUploader";
 import CategoryIcon from "./CategoryIcon";
@@ -14,17 +14,22 @@ import { MapPicker } from "@/components/leaflet/MapClient";
 import { toast } from "./Toast";
 import {
   CATEGORIES, CONDITIONS, PRICING_TYPES, UNITS, GOVERNORATES, MAX_PRODUCT_IMAGES,
+  WEIGHT_UNITS, SPEC_SUGGESTIONS, MAX_CUSTOM_SPECS, GUEST_SELLER_NAME,
 } from "@/lib/constants";
 import { formatMoney, formatQuantity, formatUnitPrice } from "@/lib/format";
-import type { PricingType, ProductCondition } from "@/lib/types";
+import { listSpecRows } from "@/lib/specs";
+import type { PricingType, ProductCondition, ProductSpec } from "@/lib/types";
 
 const STEPS = [
   { label: "ماذا تبيع؟", icon: Tag },
   { label: "الصور", icon: Camera },
-  { label: "التفاصيل", icon: ClipboardList },
+  { label: "المواصفات", icon: ListChecks },
+  { label: "السعر والتفاصيل", icon: ClipboardList },
   { label: "الموقع", icon: MapPin },
   { label: "راجع إعلانك", icon: FileCheck2 },
 ];
+
+const LAST_STEP = STEPS.length - 1;
 
 export interface SellWizardInitial {
   productId?: string;
@@ -44,21 +49,47 @@ export interface SellWizardInitial {
   negotiable?: boolean;
   contactPhone?: string | null;
   notes?: string | null;
+  sellerName?: string | null;
+  // المواصفات الكاملة
+  weight?: number | null;
+  weightUnit?: string | null;
+  itemType?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  material?: string | null;
+  color?: string | null;
+  year?: number | null;
+  dimensions?: string | null;
+  specs?: ProductSpec[];
   images?: { url: string }[];
 }
 
+interface SpecRow extends ProductSpec {
+  id: string;
+}
+
 /**
- * معالج إضافة/تعديل إعلان للبيع — 5 خطوات مع معاينة كاملة قبل النشر.
- * "اعرض شيئًا للبيع" هو أهم زر في التطبيق وهذه رحلته.
+ * معالج إضافة/تعديل إعلان للبيع — 6 خطوات مع معاينة كاملة قبل النشر.
+ *
+ * «اعرض شيئًا للبيع» هو أهم زر في التطبيق وهذه رحلته:
+ *  - لا يحتاج تسجيل دخول إطلاقًا (الحساب اختياري تمامًا).
+ *  - خطوة كاملة للمواصفات: الوزن، النوع، الخامة، الماركة، الموديل،
+ *    اللون، سنة الصنع، المقاسات + أي مواصفات أخرى يكتبها البائع بنفسه.
  */
 export default function SellWizard({
-  initial = {}, seller,
+  initial = {}, seller, ownerFields = [], adminMode = false,
 }: {
   initial?: SellWizardInitial;
-  seller: { name: string; phone: string; gov: string | null; avatarUrl: string | null };
+  /** بيانات صاحب الحساب — null عندما ينشر زائر بدون تسجيل دخول */
+  seller: { name: string; phone: string; gov: string | null; avatarUrl: string | null } | null;
+  /** خانات إضافية عرّفها مالك المنصة من لوحة الإدارة فتظهر للجميع */
+  ownerFields?: string[];
+  /** وضع الإدارة: المالك يضيف منتجًا من اللوحة (بدون فتح واتساب) */
+  adminMode?: boolean;
 }) {
   const router = useRouter();
   const isEdit = !!initial.productId;
+  const isGuest = !seller;
 
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState(initial.title ?? "");
@@ -74,18 +105,78 @@ export default function SellWizard({
   const [unit, setUnit] = useState(initial.unit ?? "كجم");
   const [negotiable, setNegotiable] = useState(initial.negotiable ?? false);
   const [hasDelivery, setHasDelivery] = useState(initial.hasDelivery ?? false);
-  const [contactPhone, setContactPhone] = useState(initial.contactPhone ?? seller.phone);
+  const [sellerName, setSellerName] = useState(initial.sellerName ?? "");
+  const [contactPhone, setContactPhone] = useState(initial.contactPhone ?? seller?.phone ?? "");
   const [notes, setNotes] = useState(initial.notes ?? "");
-  const [gov, setGov] = useState(initial.gov ?? seller.gov ?? "");
+  const [gov, setGov] = useState(initial.gov ?? seller?.gov ?? "");
   const [area, setArea] = useState(initial.area ?? "");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     initial.latitude != null && initial.longitude != null ? { lat: initial.latitude, lng: initial.longitude } : null
   );
+
+  // ---------- المواصفات (كلها اختيارية) ----------
+  const [weight, setWeight] = useState(initial.weight != null ? String(initial.weight) : "");
+  const [weightUnit, setWeightUnit] = useState(initial.weightUnit ?? "كجم");
+  const [itemType, setItemType] = useState(initial.itemType ?? "");
+  const [material, setMaterial] = useState(initial.material ?? "");
+  const [brand, setBrand] = useState(initial.brand ?? "");
+  const [model, setModel] = useState(initial.model ?? "");
+  const [color, setColor] = useState(initial.color ?? "");
+  const [year, setYear] = useState(initial.year != null ? String(initial.year) : "");
+  const [dimensions, setDimensions] = useState(initial.dimensions ?? "");
+  /** قيم الخانات التي أضافها المالك — تُحفظ كمواصفات عادية باسم الخانة */
+  const [ownerValues, setOwnerValues] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = {};
+    for (const f of ownerFields) out[f] = (initial.specs ?? []).find((s) => s.label === f)?.value ?? "";
+    return out;
+  });
+  const [customSpecs, setCustomSpecs] = useState<SpecRow[]>(
+    (initial.specs ?? [])
+      .filter((s) => !ownerFields.includes(s.label))
+      .map((s, i) => ({ id: `spec-${i}`, label: s.label, value: s.value }))
+  );
+
   const [publishing, setPublishing] = useState(false);
   /** نافذة واتساب تُفتح لحظة الضغط (داخل حدث المستخدم) حتى لا يحجبها المتصفح */
   const waWindow = useRef<Window | null>(null);
 
   const perUnit = pricingType === "PER_KG" || pricingType === "PER_PIECE";
+  const displayName = (seller?.name || sellerName.trim() || GUEST_SELLER_NAME);
+
+  const specsPayload = {
+    weight: weight.trim() ? Number(weight) : null,
+    weightUnit: weight.trim() ? weightUnit : null,
+    itemType: itemType.trim() || null,
+    material: material.trim() || null,
+    brand: brand.trim() || null,
+    model: model.trim() || null,
+    color: color.trim() || null,
+    year: year.trim() ? Number(year) : null,
+    dimensions: dimensions.trim() || null,
+    specs: [
+      ...ownerFields.map((f) => ({ label: f, value: (ownerValues[f] ?? "").trim() })),
+      ...customSpecs
+        .map((s) => ({ label: s.label.trim(), value: s.value.trim() }))
+        .filter((s) => !ownerFields.includes(s.label)),
+    ].filter((s) => s.label && s.value),
+  };
+  const previewSpecs = listSpecRows(specsPayload);
+
+  // ---------- المواصفات الحرة ----------
+  function addSpec(label = "") {
+    if (customSpecs.length >= MAX_CUSTOM_SPECS) {
+      return toast(`الحد الأقصى ${MAX_CUSTOM_SPECS} مواصفات إضافية`, "info");
+    }
+    setCustomSpecs((rows) => [...rows, { id: `spec-${Date.now()}-${rows.length}`, label, value: "" }]);
+  }
+
+  function updateSpec(id: string, patch: Partial<ProductSpec>) {
+    setCustomSpecs((rows) => rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+
+  function removeSpec(id: string) {
+    setCustomSpecs((rows) => rows.filter((r) => r.id !== id));
+  }
 
   function validateStep(i: number): string | null {
     if (i === 0) {
@@ -96,13 +187,18 @@ export default function SellWizard({
       if (images.length === 0) return "أضف صورة واحدة على الأقل";
       if (images.length > MAX_PRODUCT_IMAGES) return `الحد الأقصى ${MAX_PRODUCT_IMAGES} صور`;
     }
-    if (i === 2) {
+    // الخطوة 2 (المواصفات) اختيارية بالكامل — لا تحقق فيها
+    if (i === 3) {
       if (description.trim().length < 10) return "اكتب وصفًا واضحًا (10 أحرف على الأقل)";
       if (!price || Number(price) <= 0) return "أدخل سعرًا صحيحًا";
       if (!quantity || Number(quantity) <= 0) return "أدخل كمية صحيحة";
-      if (!/^01[0125]\d{8}$/.test(contactPhone.replace(/\D/g, "").replace(/^(20|0020)/, ""))) return "رقم التواصل غير صحيح";
+      // رقم التواصل اختياري — نتحقق من شكله فقط إذا كتبه البائع
+      const digits = contactPhone.replace(/\D/g, "").replace(/^(0020|20)/, "0");
+      if (contactPhone.trim() && !/^01[0125]\d{8}$/.test(digits)) {
+        return "رقم التواصل غير صحيح — اتركه فارغًا أو اكتبه بالشكل 01xxxxxxxxx";
+      }
     }
-    if (i === 3) {
+    if (i === 4) {
       if (!gov) return "اختر المحافظة";
     }
     return null;
@@ -111,7 +207,7 @@ export default function SellWizard({
   function next() {
     const err = validateStep(step);
     if (err) return toast(err, "error");
-    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    setStep((s) => Math.min(s + 1, LAST_STEP));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -135,7 +231,7 @@ export default function SellWizard({
 
   async function publish() {
     // فتح نافذة واتساب مبكرًا (ضمن نقرة المستخدم) لتفادي حاجب النوافذ المنبثقة
-    if (!isEdit && typeof window !== "undefined") {
+    if (!isEdit && !adminMode && typeof window !== "undefined") {
       waWindow.current = window.open("", "_blank");
     }
 
@@ -156,8 +252,10 @@ export default function SellWizard({
         longitude: coords?.lng ?? null,
         hasDelivery,
         negotiable,
-        contactPhone,
+        contactPhone: contactPhone.trim() || null,
         notes: notes.trim() || null,
+        sellerName: sellerName.trim() || null,
+        ...specsPayload,
         images: images.map((i) => i.url),
       };
 
@@ -179,6 +277,14 @@ export default function SellWizard({
         return;
       }
 
+      // ------- المالك يضيف من اللوحة: نشر مباشر بلا واتساب -------
+      if (adminMode) {
+        toast("تم نشر المنتج على الموقع", "success");
+        router.push("/admin/products");
+        router.refresh();
+        return;
+      }
+
       // ------- الطلب يصل تلقائيًا لواتساب مالك المنصة -------
       if (data.whatsappUrl) {
         if (waWindow.current && !waWindow.current.closed) {
@@ -190,7 +296,7 @@ export default function SellWizard({
 
       if (data.status === "PENDING") {
         toast("تم إرسال طلبك للإدارة عبر واتساب — سيظهر الإعلان بعد المراجعة", "success");
-        router.push("/account?tab=selling");
+        router.push(isGuest ? "/sell" : "/account?tab=selling");
       } else {
         toast("تم نشر إعلانك ووصل الطلب لإدارة كوكب كراكيب على واتساب", "success");
         router.push(`/products/${data.product.id}?sent=1`);
@@ -227,7 +333,7 @@ export default function SellWizard({
                   {s.label}
                 </span>
               </div>
-              {i < STEPS.length - 1 && (
+              {i < LAST_STEP && (
                 <div className={`mx-1 h-1 flex-1 rounded-full ${i < step ? "bg-planet-500" : "bg-planet-100"}`} />
               )}
             </div>
@@ -305,31 +411,21 @@ export default function SellWizard({
           </div>
         )}
 
-        {/* ================= الخطوة 3: التفاصيل ================= */}
+        {/* ================= الخطوة 3: المواصفات الكاملة ================= */}
         {step === 2 && (
           <div className="space-y-5 animate-fade-up">
             <div className="text-center">
               <span className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-planet-500 to-tealx-500 text-white shadow-glow">
-                <ClipboardList size={26} />
+                <ListChecks size={26} />
               </span>
-              <h2 className="text-xl font-black text-planet-950">تفاصيل المنتج</h2>
-              <p className="mt-1 text-sm text-planet-500">كل التفاصيل تساعد المشتري على اتخاذ قراره</p>
+              <h2 className="text-xl font-black text-planet-950">مواصفات ما تبيعه</h2>
+              <p className="mt-1 text-sm text-planet-500">
+                كم وزنه؟ ما نوعه؟ خامته؟ ماركته؟ — كل الحقول اختيارية، املأ ما تعرفه فقط
+              </p>
             </div>
 
             <div>
-              <label className="field-label">الوصف <span className="text-rose-500">*</span></label>
-              <textarea
-                className="field min-h-28"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="صف المنتج: حالته، مناسبة لماذا، أي تفاصيل مهمة..."
-                maxLength={3000}
-              />
-              <p className="mt-1 text-[11px] font-bold text-planet-400">{description.length} / 3000 حرف</p>
-            </div>
-
-            <div>
-              <label className="field-label">الحالة</label>
+              <label className="field-label">حالة المنتج</label>
               <div className="flex flex-wrap gap-2">
                 {CONDITIONS.map((c) => (
                   <button
@@ -346,6 +442,215 @@ export default function SellWizard({
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="field-label">الوزن</label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    className="field"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    placeholder="مثال: 25"
+                    min={0}
+                    step="any"
+                    inputMode="decimal"
+                  />
+                  <select className="field w-28" value={weightUnit} onChange={(e) => setWeightUnit(e.target.value)}>
+                    {WEIGHT_UNITS.map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
+                <p className="mt-1 text-[11px] font-bold text-planet-400">الوزن التقريبي يكفي</p>
+              </div>
+              <div>
+                <label className="field-label">النوع</label>
+                <input
+                  className="field"
+                  value={itemType}
+                  onChange={(e) => setItemType(e.target.value)}
+                  placeholder="مثال: نحاس أحمر / غسالة أوتوماتيك"
+                  maxLength={60}
+                />
+              </div>
+              <div>
+                <label className="field-label">الخامة</label>
+                <input
+                  className="field"
+                  value={material}
+                  onChange={(e) => setMaterial(e.target.value)}
+                  placeholder="مثال: ألومنيوم / خشب زان / بلاستيك"
+                  maxLength={60}
+                />
+              </div>
+              <div>
+                <label className="field-label">الماركة</label>
+                <input
+                  className="field"
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  placeholder="مثال: توشيبا"
+                  maxLength={60}
+                />
+              </div>
+              <div>
+                <label className="field-label">الموديل</label>
+                <input
+                  className="field"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder="مثال: AW-9020"
+                  maxLength={60}
+                />
+              </div>
+              <div>
+                <label className="field-label">اللون</label>
+                <input
+                  className="field"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  placeholder="مثال: أبيض"
+                  maxLength={40}
+                />
+              </div>
+              <div>
+                <label className="field-label">سنة الصنع</label>
+                <input
+                  type="number"
+                  className="field"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  placeholder="مثال: 2015"
+                  min={1900}
+                  max={new Date().getFullYear() + 1}
+                  inputMode="numeric"
+                />
+              </div>
+              <div>
+                <label className="field-label">المقاسات / الأبعاد</label>
+                <input
+                  className="field"
+                  value={dimensions}
+                  onChange={(e) => setDimensions(e.target.value)}
+                  placeholder="مثال: 120 × 60 × 75 سم"
+                  maxLength={80}
+                />
+              </div>
+            </div>
+
+            {/* ---------- خانات أضافها مالك المنصة ---------- */}
+            {ownerFields.length > 0 && (
+              <div className="rounded-2xl border border-gold-300/50 bg-gold-50/60 p-4">
+                <p className="mb-0.5 text-sm font-extrabold text-planet-900">خانات إضافية من إدارة الموقع</p>
+                <p className="mb-3 text-[11px] font-bold text-planet-500">
+                  املأ ما ينطبق على شيئك — كلها اختيارية
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {ownerFields.map((f) => (
+                    <div key={f}>
+                      <label className="field-label">{f}</label>
+                      <input
+                        className="field"
+                        value={ownerValues[f] ?? ""}
+                        onChange={(e) => setOwnerValues((prev) => ({ ...prev, [f]: e.target.value }))}
+                        placeholder={f}
+                        maxLength={120}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ---------- مواصفات إضافية يكتبها البائع ---------- */}
+            <div className="rounded-2xl border-2 border-dashed border-planet-200 bg-planet-50/50 p-4">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-extrabold text-planet-900">مواصفات إضافية</p>
+                  <p className="text-[11px] font-bold text-planet-500">
+                    أضف أي تفصيلة أخرى عن شيئك: القدرة، السعة، عدد القطع، هل يعمل؟ ... وهكذا
+                  </p>
+                </div>
+                <button type="button" onClick={() => addSpec()} className="btn-outline px-4 py-2 text-xs">
+                  <Plus size={14} /> أضف مواصفة
+                </button>
+              </div>
+
+              {customSpecs.length > 0 && (
+                <div className="mb-3 space-y-2.5">
+                  {customSpecs.map((row) => (
+                    <div key={row.id} className="flex items-center gap-2">
+                      <input
+                        className="field w-2/5"
+                        value={row.label}
+                        onChange={(e) => updateSpec(row.id, { label: e.target.value })}
+                        placeholder="اسم المواصفة"
+                        maxLength={40}
+                      />
+                      <input
+                        className="field flex-1"
+                        value={row.value}
+                        onChange={(e) => updateSpec(row.id, { value: e.target.value })}
+                        placeholder="القيمة"
+                        maxLength={120}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeSpec(row.id)}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-500 transition-colors hover:bg-rose-100"
+                        aria-label="حذف المواصفة"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                {SPEC_SUGGESTIONS.filter((s) => !customSpecs.some((r) => r.label === s)).slice(0, 8).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => addSpec(s)}
+                    className="chip border-planet-200 bg-white px-3 py-1.5 text-[11px] text-planet-600 hover:border-planet-400"
+                  >
+                    <Plus size={11} /> {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="rounded-2xl border border-tealx-300/40 bg-tealx-500/10 px-4 py-3 text-xs font-bold leading-6 text-tealx-700">
+              كلما كتبت مواصفات أدق، وصل إعلانك لمشترين أكثر جدية — وتصل المواصفات كاملة لإدارة كوكب كراكيب على واتساب.
+            </p>
+          </div>
+        )}
+
+        {/* ================= الخطوة 4: السعر والتفاصيل ================= */}
+        {step === 3 && (
+          <div className="space-y-5 animate-fade-up">
+            <div className="text-center">
+              <span className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-planet-500 to-tealx-500 text-white shadow-glow">
+                <ClipboardList size={26} />
+              </span>
+              <h2 className="text-xl font-black text-planet-950">السعر والتفاصيل</h2>
+              <p className="mt-1 text-sm text-planet-500">كل التفاصيل تساعد المشتري على اتخاذ قراره</p>
+            </div>
+
+            <div>
+              <label className="field-label">الوصف <span className="text-rose-500">*</span></label>
+              <textarea
+                className="field min-h-28"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="صف المنتج: حالته، مناسب لماذا، أي تفاصيل مهمة..."
+                maxLength={3000}
+              />
+              <p className="mt-1 text-[11px] font-bold text-planet-400">{description.length} / 3000 حرف</p>
             </div>
 
             <div>
@@ -439,35 +744,60 @@ export default function SellWizard({
               </button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="field-label">رقم التواصل</label>
-                <input
-                  className="field"
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                  placeholder="01xxxxxxxxx"
-                  dir="ltr"
-                  inputMode="tel"
-                />
-                <p className="mt-1 text-[11px] font-bold text-planet-400">يظهر للمشترين للتواصل معك مباشرة</p>
-              </div>
-              <div>
-                <label className="field-label">ملاحظات إضافية</label>
-                <input
-                  className="field"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="مثال: متاح للاستلام بعد 5 مساءً"
-                  maxLength={600}
-                />
+            {/* ---------- بيانات التواصل: كلها اختيارية ---------- */}
+            <div className="rounded-2xl border border-planet-100 bg-planet-50/60 p-4">
+              <p className="mb-3 text-sm font-extrabold text-planet-900">بيانات التواصل (اختيارية)</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {isGuest && (
+                  <div>
+                    <label className="field-label">اسمك</label>
+                    <div className="relative">
+                      <UserRound size={16} className="absolute end-4 top-1/2 -translate-y-1/2 text-planet-400" />
+                      <input
+                        className="field pe-11"
+                        value={sellerName}
+                        onChange={(e) => setSellerName(e.target.value)}
+                        placeholder="مثال: أحمد (اختياري)"
+                        maxLength={60}
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] font-bold text-planet-400">لو تركته فارغًا سيظهر الإعلان باسم «بائع ضيف»</p>
+                  </div>
+                )}
+                <div>
+                  <label className="field-label">رقم التواصل</label>
+                  <div className="relative">
+                    <Phone size={16} className="absolute end-4 top-1/2 -translate-y-1/2 text-planet-400" />
+                    <input
+                      className="field pe-11"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="01xxxxxxxxx (اختياري)"
+                      dir="ltr"
+                      inputMode="tel"
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] font-bold text-planet-400">
+                    اختياري — بدونه يتواصل معك فريق كوكب كراكيب من واتساب الذي ترسل منه
+                  </p>
+                </div>
+                <div className={isGuest ? "sm:col-span-2" : ""}>
+                  <label className="field-label">ملاحظات إضافية</label>
+                  <input
+                    className="field"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="مثال: متاح للاستلام بعد 5 مساءً"
+                    maxLength={600}
+                  />
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ================= الخطوة 4: الموقع ================= */}
-        {step === 3 && (
+        {/* ================= الخطوة 5: الموقع ================= */}
+        {step === 4 && (
           <div className="space-y-5 animate-fade-up">
             <div className="text-center">
               <span className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-planet-500 to-tealx-500 text-white shadow-glow">
@@ -510,8 +840,8 @@ export default function SellWizard({
           </div>
         )}
 
-        {/* ================= الخطوة 5: راجع إعلانك ================= */}
-        {step === 4 && (
+        {/* ================= الخطوة 6: راجع إعلانك ================= */}
+        {step === 5 && (
           <div className="space-y-5 animate-fade-up">
             <div className="text-center">
               <span className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white shadow-lift">
@@ -552,18 +882,38 @@ export default function SellWizard({
                   {hasDelivery && <span className="chip border-planet-200 bg-planet-50 text-planet-700"><Truck size={12} /> توصيل</span>}
                 </div>
                 <p className="line-clamp-3 text-sm leading-7 text-planet-700">{description}</p>
+
+                {/* المواصفات كما ستظهر في صفحة الإعلان */}
+                {previewSpecs.length > 0 && (
+                  <div className="rounded-2xl border border-planet-100 bg-planet-50/60 p-3.5">
+                    <p className="mb-2 flex items-center gap-1.5 text-xs font-extrabold text-planet-800">
+                      <ListChecks size={14} className="text-planet-500" /> المواصفات
+                    </p>
+                    <dl className="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+                      {previewSpecs.map((s) => (
+                        <div key={`${s.label}-${s.value}`} className="flex items-baseline justify-between gap-3 text-xs">
+                          <dt className="font-bold text-planet-500">{s.label}</dt>
+                          <dd className="truncate font-extrabold text-planet-900">{s.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2.5 border-t border-planet-50 pt-3.5">
-                  {seller.avatarUrl ? (
+                  {seller?.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={seller.avatarUrl} alt={seller.name} className="h-9 w-9 rounded-full object-cover" />
+                    <img src={seller.avatarUrl} alt={displayName} className="h-9 w-9 rounded-full object-cover" />
                   ) : (
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-planet-500 to-tealx-500 text-sm font-black text-white">
-                      {seller.name.charAt(0)}
+                      {displayName.charAt(0)}
                     </span>
                   )}
                   <div>
-                    <p className="text-sm font-extrabold text-planet-900">{seller.name}</p>
-                    <p className="text-[11px] text-planet-500">بائع على كوكب كراكيب</p>
+                    <p className="text-sm font-extrabold text-planet-900">{displayName}</p>
+                    <p className="text-[11px] text-planet-500">
+                      {isGuest ? "بائع بدون حساب على كوكب كراكيب" : "بائع على كوكب كراكيب"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -577,31 +927,31 @@ export default function SellWizard({
                 type="button"
                 onClick={publish}
                 disabled={publishing}
-                className={`flex-[2] px-6 py-4 text-base ${isEdit ? "btn-sell" : "btn-whatsapp glow-pulse"}`}
+                className={`flex-[2] px-6 py-4 text-base ${isEdit || adminMode ? "btn-sell" : "btn-whatsapp glow-pulse"}`}
               >
                 {publishing ? (
                   <Loader2 size={19} className="animate-spin" />
-                ) : isEdit ? (
+                ) : isEdit || adminMode ? (
                   <Send size={19} />
                 ) : (
                   <WhatsAppIcon size={20} />
                 )}
-                {isEdit ? "حفظ التعديلات" : "إرسال الطلب عبر واتساب"}
+                {isEdit ? "حفظ التعديلات" : adminMode ? "نشر المنتج على الموقع" : "إرسال الطلب عبر واتساب"}
               </button>
             </div>
 
-            {!isEdit && (
+            {!isEdit && !adminMode && (
               <p className="flex items-start justify-center gap-2 rounded-2xl border border-planet-100 bg-planet-50/70 px-4 py-3 text-center text-[11px] font-bold leading-6 text-planet-600">
                 <WhatsAppIcon size={14} className="mt-0.5 shrink-0 text-[#25D366]" />
-                بضغطك «إرسال الطلب» يُحفظ إعلانك في النظام فورًا، ثم يُفتح واتساب برسالة
-                منسّقة بكل تفاصيل ما تبيعه تصل مباشرة لإدارة كوكب كراكيب لمتابعتها معك.
+                بضغطك «إرسال الطلب» يُحفظ إعلانك في النظام فورًا — بدون أي تسجيل — ثم يُفتح واتساب برسالة
+                منسّقة بكل مواصفات ما تبيعه تصل مباشرة لإدارة كوكب كراكيب لمتابعتها معك.
               </p>
             )}
           </div>
         )}
 
         {/* أزرار التنقل */}
-        {step < 4 && (
+        {step < LAST_STEP && (
           <div className="mt-7 flex items-center justify-between border-t border-planet-50 pt-5">
             <button
               type="button"
@@ -611,7 +961,7 @@ export default function SellWizard({
             >
               <ChevronRight size={16} /> السابق
             </button>
-            <span className="text-xs font-bold text-planet-400">خطوة {step + 1} من 5</span>
+            <span className="text-xs font-bold text-planet-400">خطوة {step + 1} من {STEPS.length}</span>
             <button type="button" onClick={next} className="btn-primary px-6 py-3 text-sm">
               التالي <ChevronLeft size={16} />
             </button>

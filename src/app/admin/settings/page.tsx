@@ -1,5 +1,5 @@
 import AdminSettingsForm from "@/components/admin/SettingsForm";
-import { getAllSettings, getOwnerWhatsappIntl } from "@/lib/settings";
+import { getAllSettings, getOwnerWhatsappIntl, getCustomListingFields } from "@/lib/settings";
 import { SETTING_KEYS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export default async function AdminSettingsPage() {
       <div>
         <h1 className="text-xl font-black text-planet-950 sm:text-2xl">إعدادات المنصة</h1>
         <p className="mt-1 text-sm text-planet-600">
-          الإعدادات المركزية — رقم واتساب المالك، سياسة النشر، والبيانات التجريبية
+          الإعدادات المركزية — رقم واتساب المالك، الخانات الإضافية، سياسة النشر، والبيانات التجريبية
         </p>
       </div>
 
@@ -24,6 +24,7 @@ export default async function AdminSettingsPage() {
           requireApproval: settings[SETTING_KEYS.REQUIRE_APPROVAL] === "true",
           demoMode: settings[SETTING_KEYS.DEMO_MODE] !== "false",
           currentIntl: getOwnerWhatsappIntl(),
+          customFields: getCustomListingFields(),
         }}
       />
     </div>

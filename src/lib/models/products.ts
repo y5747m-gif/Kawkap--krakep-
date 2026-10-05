@@ -1,11 +1,12 @@
 /** نماذج المنتجات والتصنيفات والصور والمفضلة والسلة */
 import { all, get, run, tx } from "../db";
 import { newId, generateProductCode } from "../ids";
-import { CATEGORIES } from "../constants";
+import { CATEGORIES, GUEST_SELLER_NAME, MAX_CUSTOM_SPECS } from "../constants";
 import { isDemoMode } from "../settings";
+import { GUEST_SELLER_ID } from "./users";
 import type {
   Product, ProductImage, ProductCardData, ProductDetail, Category, PricingType,
-  ProductCondition, ProductStatus, CartItemData,
+  ProductCondition, ProductStatus, CartItemData, ProductSpec, ProductSpecs,
 } from "../types";
 import { haversineKm, type GeoPoint } from "../geo";
 
@@ -56,6 +57,8 @@ SELECT
   p.id, p.code, p.title, p.description, p.price, p.pricing_type, p.quantity, p.unit,
   p.condition, p.gov, p.area, p.latitude, p.longitude, p.has_delivery, p.negotiable,
   p.contact_phone, p.notes, p.status, p.featured, p.is_demo, p.views,
+  p.guest_name, p.weight, p.weight_unit, p.item_type, p.brand, p.model, p.material,
+  p.color, p.item_year, p.dimensions, p.specs,
   p.created_at, p.updated_at,
   c.slug AS category_slug, c.name AS category_name, c.icon AS category_icon, c.color AS category_color,
   u.id AS seller_id, u.name AS seller_name, u.phone AS seller_phone, u.created_at AS seller_since,
@@ -99,10 +102,12 @@ function mapCardRow(r: Record<string, unknown>, viewerFavorites?: Map<string, nu
     categoryIcon: r.category_icon as string,
     categoryColor: r.category_color as string,
     sellerId: r.seller_id as string,
-    sellerName: r.seller_name as string,
+    // إعلانات الضيوف تحمل اسم صاحبها المكتوب في المعالج (إن كتبه)
+    sellerName: ((r.guest_name as string) || (r.seller_name as string)) ?? GUEST_SELLER_NAME,
     sellerAvatar: (r.seller_avatar as string) ?? null,
     sellerRating: (r.seller_rating as number) ?? 0,
     sellerRatingCount: (r.seller_rating_count as number) ?? 0,
+    isGuestSeller: r.seller_id === GUEST_SELLER_ID,
     image: (r.image as string) ?? null,
     imagesCount: (r.images_count as number) ?? 0,
   };
@@ -147,9 +152,11 @@ export function searchProducts(query: ProductQuery): { items: ProductCardData[];
   if (query.q) {
     const like = `%${query.q}%`;
     conditions.push(
-      `(p.title LIKE ? OR p.description LIKE ? OR p.keywords LIKE ? OR p.gov LIKE ? OR p.area LIKE ? OR c.name LIKE ? OR u.name LIKE ?)`
+      `(p.title LIKE ? OR p.description LIKE ? OR p.keywords LIKE ? OR p.gov LIKE ? OR p.area LIKE ?
+        OR p.brand LIKE ? OR p.model LIKE ? OR p.item_type LIKE ? OR p.material LIKE ? OR p.specs LIKE ?
+        OR c.name LIKE ? OR u.name LIKE ? OR p.guest_name LIKE ?)`
     );
-    params.push(like, like, like, like, like, like, like);
+    params.push(like, like, like, like, like, like, like, like, like, like, like, like, like);
   }
   if (query.categorySlug) { conditions.push("c.slug = ?"); params.push(query.categorySlug); }
   if (query.gov) { conditions.push("p.gov = ?"); params.push(query.gov); }
@@ -198,11 +205,46 @@ function getFavoritesMap(userId: string): Map<string, number> {
 
 // ------------------------- منتج واحد -------------------------
 
+/** قراءة المواصفات الحرة المخزنة كـ JSON — تتجاهل أي بيانات تالفة */
+export function parseSpecsJson(raw: unknown): ProductSpec[] {
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((s) => s && typeof s === "object")
+      .map((s) => ({ label: String((s as ProductSpec).label ?? ""), value: String((s as ProductSpec).value ?? "") }))
+      .filter((s) => s.label.trim() && s.value.trim())
+      .slice(0, MAX_CUSTOM_SPECS);
+  } catch {
+    return [];
+  }
+}
+
+/** استخراج كل حقول المواصفات من صف قاعدة البيانات */
+function mapSpecs(r: Record<string, unknown>): ProductSpecs {
+  return {
+    weight: (r.weight as number) ?? null,
+    weightUnit: (r.weight_unit as string) ?? null,
+    itemType: (r.item_type as string) ?? null,
+    brand: (r.brand as string) ?? null,
+    model: (r.model as string) ?? null,
+    material: (r.material as string) ?? null,
+    color: (r.color as string) ?? null,
+    year: (r.item_year as number) ?? null,
+    dimensions: (r.dimensions as string) ?? null,
+    specs: parseSpecsJson(r.specs),
+  };
+}
+
 export function mapProduct(r: Record<string, unknown>): Product {
   return {
+    ...mapSpecs(r),
     id: r.id as string,
     code: r.code as string,
     sellerId: r.seller_id as string,
+    guestName: (r.guest_name as string) ?? null,
+    guestToken: (r.guest_token as string) ?? null,
     categoryId: r.category_id as string,
     title: r.title as string,
     description: r.description as string,
@@ -241,6 +283,7 @@ export function getProductDetail(id: string, viewerId?: string): ProductDetail |
   const base = mapCardRow(r as Record<string, unknown>, viewerId ? getFavoritesMap(viewerId) : undefined);
   const d: ProductDetail = {
     ...base,
+    ...mapSpecs(r as Record<string, unknown>),
     sellerPhone: ((r as Record<string, unknown>).seller_phone as string) ?? null,
     sellerSince: (r as Record<string, unknown>).seller_since as string,
     sellerProductsCount: ((r as Record<string, unknown>).seller_products_count as number) ?? 0,
@@ -269,8 +312,11 @@ export function incrementViews(id: string): void {
 
 // ------------------------- إنشاء وتحديث -------------------------
 
-export interface ProductInput {
+export interface ProductInput extends Partial<ProductSpecs> {
   sellerId: string;
+  /** اسم البائع الضيف ورمز متصفحه (النشر بدون حساب) */
+  guestName?: string | null;
+  guestToken?: string | null;
   categoryId: string;
   title: string;
   description: string;
@@ -292,6 +338,16 @@ export interface ProductInput {
   images: string[]; // روابط الصور بالترتيب (الأولى هي الرئيسية)
 }
 
+/** تحويل المواصفات الحرة إلى JSON للتخزين (null إذا لم توجد) */
+function serializeSpecs(specs?: ProductSpec[] | null): string | null {
+  if (!specs || !specs.length) return null;
+  const clean = specs
+    .map((s) => ({ label: String(s.label ?? "").trim(), value: String(s.value ?? "").trim() }))
+    .filter((s) => s.label && s.value)
+    .slice(0, MAX_CUSTOM_SPECS);
+  return clean.length ? JSON.stringify(clean) : null;
+}
+
 export function createProduct(input: ProductInput): Product {
   return tx(() => {
     const id = newId();
@@ -301,12 +357,19 @@ export function createProduct(input: ProductInput): Product {
     run(
       `INSERT INTO products (id, code, seller_id, category_id, title, description, price, pricing_type,
         quantity, unit, condition, gov, area, latitude, longitude, has_delivery, negotiable,
-        contact_phone, notes, keywords, status, featured, is_demo, views, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?)`,
+        contact_phone, notes, keywords, status, featured, is_demo, views,
+        guest_name, guest_token, weight, weight_unit, item_type, brand, model, material, color,
+        item_year, dimensions, specs, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       id, code, input.sellerId, input.categoryId, input.title, input.description, input.price,
       input.pricingType, input.quantity, input.unit, input.condition, input.gov, input.area ?? null,
       input.latitude ?? null, input.longitude ?? null, input.hasDelivery ? 1 : 0, input.negotiable ? 1 : 0,
-      input.contactPhone ?? null, input.notes ?? null, input.keywords ?? null, input.status, now, now
+      input.contactPhone ?? null, input.notes ?? null, input.keywords ?? null, input.status,
+      input.guestName ?? null, input.guestToken ?? null,
+      input.weight ?? null, input.weightUnit ?? null, input.itemType ?? null, input.brand ?? null,
+      input.model ?? null, input.material ?? null, input.color ?? null, input.year ?? null,
+      input.dimensions ?? null, serializeSpecs(input.specs), now, now
     );
     insertImages(id, input.images);
     return getProductRow(id)!;
@@ -335,6 +398,11 @@ export function updateProduct(
       ["unit", "unit"], ["condition", "condition"], ["gov", "gov"], ["area", "area"],
       ["latitude", "latitude"], ["longitude", "longitude"], ["notes", "notes"],
       ["keywords", "keywords"], ["status", "status"], ["contactPhone", "contact_phone"],
+      ["guestName", "guest_name"],
+      // المواصفات الكاملة
+      ["weight", "weight"], ["weightUnit", "weight_unit"], ["itemType", "item_type"],
+      ["brand", "brand"], ["model", "model"], ["material", "material"], ["color", "color"],
+      ["year", "item_year"], ["dimensions", "dimensions"],
     ];
     for (const [key, col] of map) {
       if (changes[key] !== undefined) {
@@ -342,6 +410,7 @@ export function updateProduct(
         params.push(changes[key] as string | number | null);
       }
     }
+    if (changes.specs !== undefined) { cols.push("specs = ?"); params.push(serializeSpecs(changes.specs)); }
     if (changes.hasDelivery !== undefined) { cols.push("has_delivery = ?"); params.push(changes.hasDelivery ? 1 : 0); }
     if (changes.negotiable !== undefined) { cols.push("negotiable = ?"); params.push(changes.negotiable ? 1 : 0); }
     if (changes.featured !== undefined) { cols.push("featured = ?"); params.push(changes.featured ? 1 : 0); }
@@ -373,6 +442,16 @@ export function myProducts(sellerId: string): ProductCardData[] {
   const rows = all(
     `${CARD_SELECT} ${CARD_FROM} WHERE p.seller_id = ? ORDER BY p.created_at DESC`,
     sellerId
+  );
+  return rows.map((r) => mapCardRow(r as Record<string, unknown>));
+}
+
+/** إعلانات الزائر الذي نشر بدون حساب (من نفس المتصفح فقط) */
+export function guestProducts(guestToken: string): ProductCardData[] {
+  if (!guestToken) return [];
+  const rows = all(
+    `${CARD_SELECT} ${CARD_FROM} WHERE p.guest_token = ? ORDER BY p.created_at DESC LIMIT 50`,
+    guestToken
   );
   return rows.map((r) => mapCardRow(r as Record<string, unknown>));
 }

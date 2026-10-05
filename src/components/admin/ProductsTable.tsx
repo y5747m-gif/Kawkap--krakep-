@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Search, Eye, Trash2, Pause, Play, PenLine, Loader2, Check, X, EyeOff, Star, StarOff,
+  Plus, Tag, Save,
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import { toast } from "@/components/Toast";
@@ -36,6 +37,8 @@ export default function AdminProductsTable({
   const [q, setQ] = useState(initialQ);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  /** تعديل سعر منتج معروض مباشرة من اللوحة */
+  const [priceEdit, setPriceEdit] = useState<{ id: string; value: string } | null>(null);
 
   function goto(newStatus?: string, newQ?: string) {
     const s = newStatus ?? status;
@@ -88,6 +91,33 @@ export default function AdminProductsTable({
     }
   }
 
+  /** حفظ السعر الجديد لمنتج معروض على الموقع */
+  async function savePrice(id: string) {
+    const value = Number(priceEdit?.value);
+    if (!priceEdit || !Number.isFinite(value) || value <= 0) {
+      toast("أدخل سعرًا صحيحًا أكبر من صفر", "error");
+      return;
+    }
+    setBusy(id);
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ price: value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, price: value } : p)));
+      setPriceEdit(null);
+      toast("تم تحديث السعر على الموقع", "success");
+      router.refresh();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "حدث خطأ", "error");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* أدوات */}
@@ -106,6 +136,9 @@ export default function AdminProductsTable({
             />
           </form>
           <span className="chip shrink-0 border-planet-200 bg-planet-50 text-planet-700">{formatNumber(total)} إعلان</span>
+          <Link href="/admin/products/new" className="btn-primary shrink-0 px-4 py-2.5 text-xs sm:text-sm">
+            <Plus size={15} /> أضف منتجًا
+          </Link>
         </div>
         <div className="no-scrollbar flex gap-2 overflow-x-auto">
           {STATUS_TABS.map((t) => (
@@ -144,16 +177,53 @@ export default function AdminProductsTable({
                   <StatusBadge status={p.status} type="product" />
                   {p.featured && <span className="chip border-gold-400/50 bg-gold-500/15 text-gold-600"><Star size={11} className="fill-gold-500" /> مميز</span>}
                   {p.isDemo && <span className="chip border-sky-200 bg-sky-50 text-sky-600">تجريبي</span>}
+                  {p.isGuestSeller && (
+                    <span className="chip border-violet-200 bg-violet-50 text-violet-600">نُشر بدون حساب</span>
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-planet-500">
                   {p.categoryName} · البائع: <span className="font-bold">{p.sellerName}</span> · {p.gov}{p.area ? ` — ${p.area}` : ""} · {formatDate(p.createdAt)}
                 </p>
-                <p className="mt-1 text-sm font-black text-planet-600">
-                  {formatUnitPrice(p.price, p.pricingType, p.unit)}
-                  <span className="ms-2 text-[11px] font-bold text-planet-400">
-                    {formatNumber(p.quantity)} {p.unit} · {formatNumber(p.views)} مشاهدة
-                  </span>
-                </p>
+                {priceEdit?.id === p.id ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-2xl border border-planet-200 bg-planet-50/60 p-2">
+                    <Tag size={14} className="text-planet-500" />
+                    <input
+                      autoFocus
+                      type="number"
+                      min={1}
+                      value={priceEdit.value}
+                      onChange={(e) => setPriceEdit({ id: p.id, value: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") savePrice(p.id);
+                        if (e.key === "Escape") setPriceEdit(null);
+                      }}
+                      className="w-28 rounded-xl border border-planet-200 bg-white px-3 py-1.5 text-sm font-black text-planet-800 outline-none focus:border-planet-500"
+                      dir="ltr"
+                    />
+                    <span className="text-[11px] font-bold text-planet-500">
+                      جنيه {p.pricingType === "PER_KG" ? "/ كجم" : p.pricingType === "PER_PIECE" ? "/ قطعة" : ""}
+                    </span>
+                    <button onClick={() => savePrice(p.id)} disabled={busy === p.id} className="chip border-planet-300 bg-planet-500 text-white">
+                      <Save size={12} /> حفظ السعر
+                    </button>
+                    <button onClick={() => setPriceEdit(null)} className="chip border-planet-200 bg-white text-planet-500">
+                      إلغاء
+                    </button>
+                  </div>
+                ) : (
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-sm font-black text-planet-600">
+                    {formatUnitPrice(p.price, p.pricingType, p.unit)}
+                    <button
+                      onClick={() => setPriceEdit({ id: p.id, value: String(p.price) })}
+                      className="chip border-gold-300 bg-gold-50 py-0.5 text-[10px] text-gold-700 transition-colors hover:bg-gold-100"
+                    >
+                      <Tag size={11} /> تعديل السعر
+                    </button>
+                    <span className="text-[11px] font-bold text-planet-400">
+                      {formatNumber(p.quantity)} {p.unit} · {formatNumber(p.views)} مشاهدة
+                    </span>
+                  </p>
+                )}
 
                 {/* الإجراءات */}
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">

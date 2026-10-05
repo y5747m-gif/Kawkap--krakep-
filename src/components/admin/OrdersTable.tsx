@@ -111,7 +111,14 @@ export default function AdminOrdersTable({
                 <tr key={o.id} className="align-top hover:bg-planet-50/40">
                   <td className="px-3 py-3.5 font-black text-planet-700">#{o.orderCode}</td>
                   <td className="px-3 py-3.5">
-                    <p className="font-bold text-planet-900">{o.customerName}</p>
+                    <p className="flex flex-wrap items-center gap-1.5 font-bold text-planet-900">
+                      {o.customerName}
+                      {!o.buyerId && (
+                        <span className="chip border-gold-300 bg-gold-50 px-1.5 py-0 text-[9px] text-gold-700">
+                          طلب بدون حساب
+                        </span>
+                      )}
+                    </p>
                     <p className="text-[11px] text-planet-500" dir="ltr">{o.customerPhone}</p>
                   </td>
                   <td className="max-w-64 px-3 py-3.5">

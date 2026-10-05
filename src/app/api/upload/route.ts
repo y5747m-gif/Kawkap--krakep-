@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { NextRequest } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, ensureGuestToken } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/http";
 
 const ALLOWED: Record<string, string> = {
@@ -13,10 +13,16 @@ const ALLOWED: Record<string, string> = {
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-/** رفع صور المنتجات والصور الشخصية — حتى 8 صور للمنتج (يُفحص عدد الصور عند حفظ المنتج) */
+/**
+ * رفع صور المنتجات والصور الشخصية — حتى 8 صور للمنتج
+ * (يُفحص عدد الصور عند حفظ المنتج).
+ *
+ * التسجيل اختياري: الزائر الذي يعرض شيئًا للبيع بدون حساب يرفع صوره أيضًا،
+ * ويُمنح رمز زائر يربط إعلانه بمتصفحه.
+ */
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
-  if (!user) return jsonError("سجل الدخول أولًا", 401);
+  if (!user) await ensureGuestToken();
 
   try {
     const form = await req.formData();

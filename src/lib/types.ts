@@ -47,10 +47,38 @@ export type PricingType = "FIXED" | "PER_KG" | "PER_PIECE" | "BULK";
 export type ProductCondition = "NEW" | "LIKE_NEW" | "USED" | "OLD" | "SCRAP";
 export type ProductStatus = "PENDING" | "ACTIVE" | "PAUSED" | "REJECTED" | "HIDDEN" | "SOLD";
 
-export interface Product {
+/** مواصفة حرة يضيفها البائع بنفسه: «القدرة: 1200 وات» */
+export interface ProductSpec {
+  label: string;
+  value: string;
+}
+
+/**
+ * مواصفات ما يُباع — كلها اختيارية بالكامل.
+ * البائع يملأ ما ينطبق على شيئه (الوزن، النوع، الماركة...) ويضيف
+ * أي مواصفات أخرى يريدها في specs.
+ */
+export interface ProductSpecs {
+  weight: number | null;
+  weightUnit: string | null;
+  itemType: string | null;
+  brand: string | null;
+  model: string | null;
+  material: string | null;
+  color: string | null;
+  year: number | null;
+  dimensions: string | null;
+  specs: ProductSpec[];
+}
+
+export interface Product extends ProductSpecs {
   id: string;
   code: string;
   sellerId: string;
+  /** اسم البائع الضيف (النشر بدون حساب) */
+  guestName: string | null;
+  /** رمز متصفح الضيف — يسمح له بتعديل إعلانه دون حساب */
+  guestToken: string | null;
   categoryId: string;
   title: string;
   description: string;
@@ -115,6 +143,8 @@ export interface ProductCardData {
   sellerAvatar: string | null;
   sellerRating: number;
   sellerRatingCount: number;
+  /** إعلان نُشر بدون حساب (بائع ضيف) */
+  isGuestSeller: boolean;
   image: string | null;
   imagesCount: number;
   isFavorite?: boolean;
@@ -122,7 +152,7 @@ export interface ProductCardData {
   distanceKm?: number | null;
 }
 
-export interface ProductDetail extends ProductCardData {
+export interface ProductDetail extends ProductCardData, ProductSpecs {
   sellerPhone: string | null;
   sellerSince: string;
   sellerProductsCount: number;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   MapPin, Truck, HandCoins, Package, Eye, CalendarDays, ChevronLeft, Store,
-  BadgeCheck, MessageSquareQuote, Info,
+  BadgeCheck, MessageSquareQuote, Info, ListChecks, UserRound,
 } from "lucide-react";
 import Gallery from "@/components/Gallery";
 import RatingStars from "@/components/RatingStars";
@@ -12,9 +12,12 @@ import ProductCard from "@/components/ProductCard";
 import SectionHeader from "@/components/SectionHeader";
 import { OrderNowButton, ContactSellerButton, ShareButton, ReportButton } from "@/components/ProductActions";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
-import { getCurrentUser } from "@/lib/auth";
-import { getProductDetail, incrementViews, searchProducts } from "@/lib/models/products";
+import { getCurrentUser, getGuestToken } from "@/lib/auth";
+import {
+  getProductDetail, getProductRow, incrementViews, searchProducts,
+} from "@/lib/models/products";
 import { listAddresses } from "@/lib/models/users";
+import { listSpecRows } from "@/lib/specs";
 import { formatQuantity, formatUnitPrice, formatDate, formatNumber } from "@/lib/format";
 import { CONDITION_MAP } from "@/lib/constants";
 import { formatDistance } from "@/lib/geo";
@@ -30,26 +33,33 @@ export default async function ProductPage({
   searchParams: Promise<{ sent?: string }>;
 }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
-  const user = await getCurrentUser();
+  const [user, guestToken] = await Promise.all([getCurrentUser(), getGuestToken()]);
   const product = getProductDetail(id, user?.id);
 
-  if (!product || (product.status === "REJECTED" && user?.id !== product.sellerId && user?.role !== "ADMIN")) {
+  // صاحب الإعلان: الحساب المسجل، أو الزائر الذي نشره من نفس المتصفح
+  const row = product ? getProductRow(product.id) : null;
+  const isGuestOwner = !!guestToken && !!row?.guestToken && row.guestToken === guestToken;
+  const isOwner = (!product?.isGuestSeller && user?.id === product?.sellerId) || isGuestOwner;
+
+  if (!product || (product.status === "REJECTED" && !isOwner && user?.role !== "ADMIN")) {
     notFound();
   }
 
   incrementViews(product.id);
 
-  const isOwner = user?.id === product.sellerId;
+  const specRows = listSpecRows(product);
   const isAvailable = product.status === "ACTIVE" && !isOwner;
   const addresses = user ? listAddresses(user.id) : [];
   const related = searchProducts({
     categorySlug: product.categorySlug,
     limit: 4,
     viewerId: user?.id,
-    excludeSellerId: product.sellerId,
+    // إعلانات الضيوف كلها تحت حساب واحد، فلا نستبعدها جميعًا من المشابهة
+    excludeSellerId: product.isGuestSeller ? undefined : product.sellerId,
   });
   const distance = formatDistance(product.distanceKm ?? null);
-  const contactPhone = product.contactPhone || product.sellerPhone;
+  // البائع الضيف لا يملك رقم حساب — نستخدم رقم التواصل إن تركه فقط
+  const contactPhone = product.contactPhone || (product.isGuestSeller ? null : product.sellerPhone);
 
   // بعد إرسال الإعلان من معالج البيع: تأكيد وصول الطلب لواتساب الإدارة
   // (ورابط احتياطي لإعادة الإرسال لو حجب المتصفح النافذة المنبثقة)
@@ -75,7 +85,18 @@ export default async function ProductPage({
         notes: product.notes,
         contactPhone: product.contactPhone,
         sellerName: product.sellerName,
-        sellerPhone: product.sellerPhone,
+        sellerPhone: product.isGuestSeller ? product.contactPhone : product.sellerPhone,
+        isGuest: product.isGuestSeller,
+        weight: product.weight,
+        weightUnit: product.weightUnit,
+        itemType: product.itemType,
+        brand: product.brand,
+        model: product.model,
+        material: product.material,
+        color: product.color,
+        year: product.year,
+        dimensions: product.dimensions,
+        specs: product.specs,
         status: product.status,
         createdAt: product.createdAt,
         productLink: `${getBaseUrl()}/products/${product.id}`,
@@ -221,7 +242,7 @@ export default async function ProductPage({
               </div>
             )}
 
-            {isAvailable && (
+            {isAvailable && !!contactPhone && (
               <ContactSellerButton
                 sellerId={product.sellerId}
                 sellerName={product.sellerName}
@@ -237,6 +258,26 @@ export default async function ProductPage({
             </div>
           </div>
 
+          {/* المواصفات الكاملة كما أدخلها البائع */}
+          {specRows.length > 0 && (
+            <div className="glass rounded-3xl p-4 sm:p-6">
+              <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold text-planet-950">
+                <ListChecks size={18} className="text-planet-500" /> المواصفات
+              </h2>
+              <dl className="grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
+                {specRows.map((s) => (
+                  <div
+                    key={`${s.label}-${s.value}`}
+                    className="flex items-baseline justify-between gap-3 border-b border-planet-50 py-2.5 text-sm last:border-0"
+                  >
+                    <dt className="shrink-0 font-bold text-planet-500">{s.label}</dt>
+                    <dd className="text-end font-extrabold text-planet-900">{s.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+
           {/* البائع */}
           <div className="glass rounded-3xl p-5">
             <div className="flex items-center gap-4">
@@ -245,22 +286,34 @@ export default async function ProductPage({
                 <img src={product.sellerAvatar} alt={product.sellerName} className="h-14 w-14 rounded-2xl border-2 border-planet-100 object-cover" />
               ) : (
                 <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-planet-500 to-tealx-500 text-xl font-black text-white">
-                  {product.sellerName.charAt(0)}
+                  {product.isGuestSeller ? <UserRound size={24} /> : product.sellerName.charAt(0)}
                 </span>
               )}
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 text-base font-extrabold text-planet-950">
                   {product.sellerName}
-                  {product.sellerRatingCount > 0 && <BadgeCheck size={16} className="text-tealx-500" />}
+                  {!product.isGuestSeller && product.sellerRatingCount > 0 && (
+                    <BadgeCheck size={16} className="text-tealx-500" />
+                  )}
                 </p>
-                <RatingStars rating={product.sellerRating} count={product.sellerRatingCount} size={13} />
-                <p className="mt-0.5 text-xs text-planet-500">
-                  عضو منذ {formatDate(product.sellerSince)} · {formatNumber(product.sellerProductsCount)} إعلان منشور
-                </p>
+                {product.isGuestSeller ? (
+                  <p className="mt-0.5 text-xs text-planet-500">
+                    نشر هذا الإعلان بدون حساب · المتابعة عبر إدارة كوكب كراكيب
+                  </p>
+                ) : (
+                  <>
+                    <RatingStars rating={product.sellerRating} count={product.sellerRatingCount} size={13} />
+                    <p className="mt-0.5 text-xs text-planet-500">
+                      عضو منذ {formatDate(product.sellerSince)} · {formatNumber(product.sellerProductsCount)} إعلان منشور
+                    </p>
+                  </>
+                )}
               </div>
-              <Link href={`/products?seller=${product.sellerId}`} className="btn-outline shrink-0 px-4 py-2.5 text-xs">
-                <Store size={14} /> إعلانات البائع
-              </Link>
+              {!product.isGuestSeller && (
+                <Link href={`/products?seller=${product.sellerId}`} className="btn-outline shrink-0 px-4 py-2.5 text-xs">
+                  <Store size={14} /> إعلانات البائع
+                </Link>
+              )}
             </div>
           </div>
 

@@ -1,6 +1,7 @@
 /** نماذج المستخدمين والجلسات والعناوين والمحادثات */
 import { all, db, get, run } from "../db";
 import { newId } from "../ids";
+import { GUEST_SELLER_NAME } from "../constants";
 import type { User, Profile, Address, Conversation } from "../types";
 
 interface UserRow {
@@ -58,6 +59,46 @@ export function createUser(data: {
     throw error;
   }
   return { id, name: data.name, phone: data.phone, email: data.email ?? null, role: data.role ?? "CUSTOMER", createdAt: now, updatedAt: now };
+}
+
+/* ------------------------------------------------------------------
+ * حساب «البائع الضيف» — النشر بدون تسجيل دخول
+ * ------------------------------------------------------------------
+ * الإعلانات التي يضيفها زوار بلا حساب تُنسب لحساب نظامي واحد، بينما
+ * يُحفظ اسم الزائر الحقيقي ورقمه على الإعلان نفسه (guest_name / contact_phone).
+ * لا يمكن تسجيل الدخول بهذا الحساب: رقمه ليس رقمًا صالحًا وكلمة مروره غير قابلة للمطابقة.
+ */
+export const GUEST_SELLER_ID = "guest-seller";
+const GUEST_SELLER_PHONE = "guest";
+
+export function ensureGuestSeller(): string {
+  const existing = get<{ id: string }>("SELECT id FROM users WHERE id = ?", GUEST_SELLER_ID);
+  if (existing) return GUEST_SELLER_ID;
+
+  const now = new Date().toISOString();
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    run(
+      `INSERT INTO users (id, name, phone, email, password_hash, role, created_at, updated_at)
+       VALUES (?, ?, ?, NULL, ?, 'CUSTOMER', ?, ?)
+       ON CONFLICT(id) DO NOTHING`,
+      GUEST_SELLER_ID, GUEST_SELLER_NAME, GUEST_SELLER_PHONE, "-", now, now
+    );
+    run(
+      `INSERT INTO profiles (user_id, created_at, updated_at) VALUES (?, ?, ?)
+       ON CONFLICT(user_id) DO NOTHING`,
+      GUEST_SELLER_ID, now, now
+    );
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+  return GUEST_SELLER_ID;
+}
+
+export function isGuestSellerId(id: string | null | undefined): boolean {
+  return id === GUEST_SELLER_ID;
 }
 
 export function getUserByPhone(phone: string): User | null {

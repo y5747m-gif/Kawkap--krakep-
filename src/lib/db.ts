@@ -151,6 +151,20 @@ CREATE TABLE IF NOT EXISTS products (
   featured INTEGER NOT NULL DEFAULT 0,
   is_demo INTEGER NOT NULL DEFAULT 0,
   views INTEGER NOT NULL DEFAULT 0,
+  -- البيع بدون حساب: اسم البائع الضيف ورمز متصفحه لإدارة إعلانه لاحقًا
+  guest_name TEXT,
+  guest_token TEXT,
+  -- المواصفات الكاملة لما يُباع (كلها اختيارية)
+  weight REAL,
+  weight_unit TEXT,
+  item_type TEXT,
+  brand TEXT,
+  model TEXT,
+  material TEXT,
+  color TEXT,
+  item_year INTEGER,
+  dimensions TEXT,
+  specs TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -325,6 +339,39 @@ CREATE INDEX IF NOT EXISTS idx_conversations_user ON conversations(user_id);
 `;
 
 db.exec(SCHEMA);
+
+/* ------------------------------------------------------------------
+ * ترحيلات بسيطة (Migrations)
+ * CREATE TABLE IF NOT EXISTS لا يضيف الأعمدة الجديدة لقاعدة بيانات
+ * موجودة بالفعل، فنضيفها هنا مرة واحدة وبشكل آمن للتكرار.
+ * ------------------------------------------------------------------ */
+function ensureColumn(table: string, column: string, definition: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!columns.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+const PRODUCT_COLUMN_MIGRATIONS: [string, string][] = [
+  ["guest_name", "TEXT"],
+  ["guest_token", "TEXT"],
+  ["weight", "REAL"],
+  ["weight_unit", "TEXT"],
+  ["item_type", "TEXT"],
+  ["brand", "TEXT"],
+  ["model", "TEXT"],
+  ["material", "TEXT"],
+  ["color", "TEXT"],
+  ["item_year", "INTEGER"],
+  ["dimensions", "TEXT"],
+  ["specs", "TEXT"],
+];
+
+for (const [column, definition] of PRODUCT_COLUMN_MIGRATIONS) {
+  ensureColumn("products", column, definition);
+}
+
+db.exec("CREATE INDEX IF NOT EXISTS idx_products_guest_token ON products(guest_token);");
 
 /** helpers مختصرة للاستعلامات — تمرير undefined يُحوَّل تلقائيًا إلى NULL */
 type Param = string | number | null | undefined;

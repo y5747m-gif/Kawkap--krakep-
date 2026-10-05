@@ -1,26 +1,31 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import SellWizard from "@/components/SellWizard";
-import { getCurrentUser, isAdmin } from "@/lib/auth";
+import { getCurrentUser, getGuestToken, canManageListing } from "@/lib/auth";
 import { getProductRow, listProductImages, getCategoryById } from "@/lib/models/products";
-import { getProfile } from "@/lib/models/users";
+import { getProfile, isGuestSellerId } from "@/lib/models/users";
+import { getCustomListingFields } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "تعديل الإعلان" };
 
-/** تعديل إعلان — للبائع صاحب الإعلان أو الإدارة */
+/**
+ * تعديل إعلان — لصاحب الإعلان (بحساب أو كضيف من نفس المتصفح) أو الإدارة.
+ * لا يوجد أي إجبار على تسجيل الدخول.
+ */
 export default async function EditListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getCurrentUser();
-  if (!user) redirect(`/login?next=/sell/${id}`);
+  const guestToken = await getGuestToken();
 
   const product = getProductRow(id);
   if (!product) notFound();
-  if (product.sellerId !== user.id && !isAdmin(user)) notFound();
+  if (!canManageListing(product, user, guestToken)) notFound();
 
   const images = listProductImages(product.id);
   const category = getCategoryById(product.categoryId);
-  const sellerProfile = getProfile(product.sellerId);
+  const isGuestListing = isGuestSellerId(product.sellerId);
+  const sellerProfile = isGuestListing ? null : getProfile(product.sellerId);
 
   return (
     <div className="space-y-5">
@@ -29,6 +34,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
         <p className="mt-1.5 text-sm text-planet-600">{product.title} — كود {product.code}</p>
       </div>
       <SellWizard
+        ownerFields={getCustomListingFields()}
         initial={{
           productId: product.id,
           title: product.title,
@@ -47,14 +53,29 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
           negotiable: product.negotiable,
           contactPhone: product.contactPhone,
           notes: product.notes,
+          sellerName: product.guestName,
+          weight: product.weight,
+          weightUnit: product.weightUnit,
+          itemType: product.itemType,
+          brand: product.brand,
+          model: product.model,
+          material: product.material,
+          color: product.color,
+          year: product.year,
+          dimensions: product.dimensions,
+          specs: product.specs,
           images: images.map((i) => ({ url: i.url })),
         }}
-        seller={{
-          name: user.name,
-          phone: user.phone,
-          gov: sellerProfile?.gov ?? null,
-          avatarUrl: sellerProfile?.avatarUrl ?? null,
-        }}
+        seller={
+          user && !isGuestListing
+            ? {
+                name: user.name,
+                phone: user.phone,
+                gov: sellerProfile?.gov ?? null,
+                avatarUrl: sellerProfile?.avatarUrl ?? null,
+              }
+            : null
+        }
       />
     </div>
   );

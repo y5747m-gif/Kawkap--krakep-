@@ -1,8 +1,8 @@
 import { Camera, ClipboardList, Send, Inbox, Handshake } from "lucide-react";
 
 const STEPS = [
-  { icon: Camera, title: "صوّر الشيء الذي تريد بيعه", desc: "صور واضحة تبيع أسرع" },
-  { icon: ClipboardList, title: "أضف التفاصيل والسعر", desc: "اسم، تصنيف، كمية وموقع" },
+  { icon: Camera, title: "صوّر الشيء الذي تريد بيعه", desc: "بدون تسجيل دخول — صور واضحة تبيع أسرع" },
+  { icon: ClipboardList, title: "اكتب مواصفاته والسعر", desc: "الوزن، النوع، الماركة، الكمية والموقع" },
   { icon: Send, title: "انشر إعلانك", desc: "يظهر إعلانك في المتجر فورًا" },
   { icon: Inbox, title: "استقبل الطلبات", desc: "تصلك الطلبات وتصل للإدارة" },
   { icon: Handshake, title: "تواصل لإتمام البيع", desc: "اتفق على الاستلام والتسليم" },

@@ -61,3 +61,17 @@ export function sanitizeText(s: unknown, maxLen = 2000): string {
 export function isNonEmpty(s: unknown, minLen = 1): s is string {
   return typeof s === "string" && s.trim().length >= minLen;
 }
+
+/** رقم اختياري موجب (الوزن، سنة الصنع...) — يعيد null لو لم يُدخل */
+export function optionalNumber(value: unknown, max = 1_000_000): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(normalizeDigits(String(value)));
+  if (!Number.isFinite(n) || n < 0 || n > max) return null;
+  return n;
+}
+
+/** نص اختياري نظيف — يعيد null لو كان فارغًا */
+export function optionalText(value: unknown, maxLen = 120): string | null {
+  const text = sanitizeText(value, maxLen);
+  return text ? text : null;
+}
