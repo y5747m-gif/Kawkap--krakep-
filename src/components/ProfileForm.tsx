@@ -83,7 +83,7 @@ export function ProfileEditForm({
       <div className="flex items-center gap-4">
         {form.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={form.avatarUrl} alt="صورتك" className="h-20 w-20 rounded-3xl border-2 border-planet-100 object-cover" />
+          <img src={form.avatarUrl} alt="صورتك" className="h-20 w-20 rounded-3xl border-2 border-planet-100 object-cover" loading="lazy" decoding="async" />
         ) : (
           <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-planet-500 to-tealx-500 text-2xl font-black text-white">
             {form.name.charAt(0)}

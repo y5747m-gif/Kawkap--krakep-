@@ -84,7 +84,7 @@ export default function MapExplorer({ products }: { products: MapProduct[] }) {
               <div className="kk-map-popup">
                 {p.image && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.image} alt={p.title} className="h-28 w-full rounded-xl object-cover" />
+                  <img src={p.image} alt={p.title} className="h-28 w-full rounded-xl object-cover" loading="lazy" decoding="async" />
                 )}
                 <p className="mt-2 line-clamp-1 text-sm font-extrabold text-planet-950">{p.title}</p>
                 <p className="text-sm font-black text-planet-600">

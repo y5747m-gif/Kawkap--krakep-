@@ -56,7 +56,7 @@ export default function MyProductCard({ product }: { product: ProductCardData })
         <Link href={`/products/${product.id}`} className="relative shrink-0">
           {product.image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={product.image} alt={product.title} className="h-24 w-28 rounded-2xl object-cover" />
+            <img src={product.image} alt={product.title} className="h-24 w-28 rounded-2xl object-cover" loading="lazy" decoding="async" />
           ) : (
             <span className="flex h-24 w-28 items-center justify-center rounded-2xl bg-planet-100 text-planet-300">
               <PackageSearch size={26} />

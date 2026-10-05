@@ -67,7 +67,7 @@ export default async function AccountPage({
         <div className="relative flex flex-wrap items-center gap-5">
           {profile?.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.avatarUrl} alt={user.name} className="h-20 w-20 rounded-3xl border-2 border-white/25 object-cover" />
+            <img src={profile.avatarUrl} alt={user.name} className="h-20 w-20 rounded-3xl border-2 border-white/25 object-cover" loading="lazy" decoding="async" />
           ) : (
             <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-tealx-400 to-planet-500 text-3xl font-black">
               {user.name.charAt(0)}
@@ -297,7 +297,7 @@ export default async function AccountPage({
               <div key={c.id} className="glass flex items-center gap-4 rounded-2xl p-4">
                 {c.sellerAvatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.sellerAvatar} alt={c.sellerName ?? ""} className="h-12 w-12 rounded-2xl object-cover" />
+                  <img src={c.sellerAvatar} alt={c.sellerName ?? ""} className="h-12 w-12 rounded-2xl object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-planet-500 to-tealx-500 text-sm font-black text-white">
                     {(c.sellerName ?? "ب").charAt(0)}

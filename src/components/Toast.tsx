@@ -52,7 +52,7 @@ export default function ToastHost() {
         return (
           <div
             key={t.id}
-            className={`pointer-events-auto flex w-full max-w-sm items-center gap-2.5 rounded-2xl border px-4 py-3 text-sm font-bold shadow-lift backdrop-blur animate-fade-up ${COLORS[t.type]}`}
+            className={`pointer-events-auto flex w-full max-w-sm items-center gap-2.5 rounded-2xl border px-4 py-3 text-sm font-bold shadow-lift animate-fade-up ${COLORS[t.type]}`}
           >
             <Icon size={18} className="shrink-0" />
             <span className="flex-1">{t.message}</span>

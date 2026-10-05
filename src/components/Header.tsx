@@ -29,8 +29,12 @@ export default function Header({ user, cartCount: initialCart }: { user: Current
   const [scrolled, setScrolled] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // تحديث عدادات السلة والإشعارات عند الأحداث
+  // تحديث عدادات السلة والإشعارات عند الأحداث.
+  // ملاحظة: الزائر بلا حساب ليس له سلة ولا إشعارات، وكان الموقع يرسل له
+  // طلبين إضافيين مع كل تحميل صفحة بلا أي فائدة — صار الاستدعاء مشروطًا.
+  const isSignedIn = !!user;
   useEffect(() => {
+    if (!isSignedIn) return;
     const onCart = () => {
       fetch("/api/cart").then((r) => r.json()).then((d) => setCart(d.count ?? 0)).catch(() => {});
     };
@@ -39,12 +43,11 @@ export default function Header({ user, cartCount: initialCart }: { user: Current
     };
     window.addEventListener("kk:cart-changed", onCart);
     window.addEventListener("kk:notification", onNotif);
-    onNotif();
     return () => {
       window.removeEventListener("kk:cart-changed", onCart);
       window.removeEventListener("kk:notification", onNotif);
     };
-  }, []);
+  }, [isSignedIn]);
 
   // إغلاق القوائم عند تغيير الصفحة
   useEffect(() => {
@@ -199,7 +202,7 @@ export default function Header({ user, cartCount: initialCart }: { user: Current
                 >
                   {user.profile?.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={user.profile.avatarUrl} alt={user.name} className="h-8 w-8 rounded-full border-2 border-planet-200 object-cover md:h-9 md:w-9" />
+                    <img src={user.profile.avatarUrl} alt={user.name} className="h-8 w-8 rounded-full border-2 border-planet-200 object-cover md:h-9 md:w-9" loading="lazy" decoding="async" />
                   ) : (
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-planet-500 to-tealx-500 text-sm font-extrabold text-white md:h-9 md:w-9">
                       {user.name.charAt(0)}

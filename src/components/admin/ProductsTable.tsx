@@ -163,7 +163,7 @@ export default function AdminProductsTable({
               <Link href={`/products/${p.id}`} className="shrink-0">
                 {p.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.image} alt={p.title} className="h-20 w-28 rounded-2xl object-cover" />
+                  <img src={p.image} alt={p.title} className="h-20 w-28 rounded-2xl object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <span className="flex h-20 w-28 items-center justify-center rounded-2xl bg-planet-100 text-planet-300"><Eye size={22} /></span>
                 )}

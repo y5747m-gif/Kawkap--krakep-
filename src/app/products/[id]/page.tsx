@@ -122,7 +122,7 @@ export default async function ProductPage({
       {justSent && resendUrl && (
         <div className="fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#128c7e] via-planet-700 to-planet-900 p-6 text-center text-white shadow-lift">
           <div className="pointer-events-none absolute -top-16 start-1/4 h-48 w-48 rounded-full bg-tealx-400/30 blur-3xl" />
-          <span className="relative mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white/15 backdrop-blur">
+          <span className="relative mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white/15">
             <WhatsAppIcon size={34} />
           </span>
           <h2 className="relative text-xl font-black">تم إرسال طلبك إلى إدارة كوكب كراكيب</h2>
@@ -283,7 +283,7 @@ export default async function ProductPage({
             <div className="flex items-center gap-4">
               {product.sellerAvatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={product.sellerAvatar} alt={product.sellerName} className="h-14 w-14 rounded-2xl border-2 border-planet-100 object-cover" />
+                <img src={product.sellerAvatar} alt={product.sellerName} className="h-14 w-14 rounded-2xl border-2 border-planet-100 object-cover" loading="lazy" decoding="async" />
               ) : (
                 <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-planet-500 to-tealx-500 text-xl font-black text-white">
                   {product.isGuestSeller ? <UserRound size={24} /> : product.sellerName.charAt(0)}

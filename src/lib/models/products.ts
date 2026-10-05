@@ -176,7 +176,35 @@ export function searchProducts(query: ProductQuery): { items: ProductCardData[];
   else if (query.sort === "price_desc") orderBy = "p.price DESC";
   else if (query.sort === "views") orderBy = "p.views DESC";
 
-  const rows = all(`${CARD_SELECT} ${CARD_FROM} ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`, ...params, limit, offset);
+  /**
+   * الترتيب حسب المسافة لا بد أن يحدث داخل SQL قبل ‎LIMIT‎.
+   *
+   * كان الكود السابق يرتّب حسب الأحدث، يقتطع 24 صفًا، ثم يرتّب هذه الـ24 فقط
+   * حسب المسافة — فكان خيار «الأقرب إليك» يعرض أحدث المنتجات مرتَّبة بينها،
+   * لا أقرب المنتجات فعلًا، ويعطي نتائج مكرّرة/ناقصة عند التنقل بين الصفحات.
+   *
+   * نحسب المسافة بصيغة Haversine داخل الاستعلام (دوال الرياضيات متاحة في
+   * SQLite المدمج مع Node 22). المنتجات بلا إحداثيات تُدفع إلى آخر القائمة
+   * بدل أن تختفي.
+   */
+  const distanceParams: number[] = [];
+  if (query.sort === "distance" && query.userPoint) {
+    const { lat, lng } = query.userPoint;
+    orderBy = `
+      CASE WHEN p.latitude IS NULL OR p.longitude IS NULL THEN 1 ELSE 0 END ASC,
+      (6371 * 2 * asin(min(1.0, sqrt(
+        power(sin(radians(p.latitude - ?) / 2), 2) +
+        cos(radians(?)) * cos(radians(p.latitude)) *
+        power(sin(radians(p.longitude - ?) / 2), 2)
+      )))) ASC,
+      p.created_at DESC`;
+    distanceParams.push(lat, lat, lng);
+  }
+
+  const rows = all(
+    `${CARD_SELECT} ${CARD_FROM} ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+    ...params, ...distanceParams, limit, offset
+  );
   const countRow = get<{ c: number }>(`SELECT COUNT(*) AS c ${CARD_FROM} ${where}`, ...params);
 
   const favMap = query.viewerId ? getFavoritesMap(query.viewerId) : undefined;
@@ -189,9 +217,8 @@ export function searchProducts(query: ProductQuery): { items: ProductCardData[];
           ? haversineKm(query.userPoint, { lat: it.latitude, lng: it.longitude })
           : null;
     }
-    if (query.sort === "distance") {
-      items.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
-    }
+    // لا حاجة لإعادة الترتيب هنا: ORDER BY في الاستعلام رتّب الصفحة كاملة
+    // على مستوى قاعدة البيانات، وإعادة ترتيب 24 صفًا فقط كانت هي أصل الخلل.
   }
   return { items, total: countRow?.c ?? 0 };
 }

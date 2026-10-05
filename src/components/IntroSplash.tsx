@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
-  Cog, Wrench, Hammer, Anvil, Cpu, Radio, WashingMachine, Sofa, Box, Newspaper,
-  CupSoda, Droplets, TreePine, Coins, Layers, Package, Recycle, Lightbulb,
-  Battery, Tv, Fan, Plug, Keyboard, Armchair, Microwave, Bolt, Bike, Key,
+  Cog, Wrench, Cpu, WashingMachine, Sofa, Box, Newspaper,
+  Droplets, Coins, Package, Recycle, Tv,
 } from "lucide-react";
 import PlanetMark from "./PlanetMark";
 
@@ -22,8 +21,14 @@ import PlanetMark from "./PlanetMark";
  */
 
 const INTRO_KEY = "kk-intro-seen-v1";
-const PLAY_MS = 4100; // زمن العرض قبل بدء الخروج
-const LEAVE_MS = 800; // زمن حركة الخروج
+/**
+ * زمن العرض قبل بدء الخروج. كان 4.1 ثانية + 0.8 للخروج = خمس ثوانٍ كاملة
+ * يقف فيها الزائر أمام شاشة لا يستطيع تجاوزها إلا بزر صغير — وهو أكبر سبب
+ * للإحساس بأن «الموقع بطيء» رغم أن الصفحة نفسها جاهزة خلف المقدمة.
+ * قُلِّص الزمن ويمكن تخطي المقدمة بالضغط في أي مكان.
+ */
+const PLAY_MS = 2400;
+const LEAVE_MS = 550; // زمن حركة الخروج
 
 /* ------------------------------------------------------------------
  * تشكيل الحروف العربية: كل حرف يُعرض بصورته المتصلة الصحيحة
@@ -46,7 +51,7 @@ const WORDS: { letter: string; delay: number }[][] = (() => {
   let index = 0;
   return ["كوكب", "كراكيب"].map((word) =>
     shapeWord(word).map((letter) => {
-      const delay = 1.05 + index * 0.1;
+      const delay = 0.72 + index * 0.062;
       index += 1;
       return { letter, delay };
     })
@@ -56,7 +61,18 @@ const WORDS: { letter: string; delay: number }[][] = (() => {
 /* ------------------------------------------------------------------
  * الخردوات المتناثرة في الخلفية (مواضع ثابتة حتى لا يختلف SSR)
  * ------------------------------------------------------------------ */
-type Scrap = { Icon: typeof Cog; top: number; left: number; size: number; delay: number; dur: number; rot: number; op: number };
+type Scrap = {
+  Icon: typeof Cog;
+  top: number;
+  left: number;
+  size: number;
+  delay: number;
+  dur: number;
+  rot: number;
+  op: number;
+  /** يظهر على الشاشات المتوسطة فأكبر فقط */
+  lg?: boolean;
+};
 
 const SCRAPS: Scrap[] = [
   { Icon: Cog, top: 12, left: 8, size: 54, delay: 0.0, dur: 9, rot: -18, op: 0.22 },
@@ -64,29 +80,14 @@ const SCRAPS: Scrap[] = [
   { Icon: WashingMachine, top: 68, left: 12, size: 58, delay: 0.3, dur: 10, rot: 8, op: 0.18 },
   { Icon: Sofa, top: 80, left: 78, size: 62, delay: 1.1, dur: 12, rot: -12, op: 0.17 },
   { Icon: Cpu, top: 46, left: 4, size: 40, delay: 0.9, dur: 8, rot: 16, op: 0.2 },
-  { Icon: Radio, top: 16, left: 62, size: 44, delay: 1.4, dur: 10, rot: -22, op: 0.18 },
   { Icon: Box, top: 58, left: 92, size: 42, delay: 0.2, dur: 9, rot: 14, op: 0.2 },
-  { Icon: Newspaper, top: 86, left: 40, size: 40, delay: 1.7, dur: 11, rot: -8, op: 0.16 },
-  { Icon: CupSoda, top: 34, left: 24, size: 36, delay: 0.5, dur: 8.5, rot: 20, op: 0.2 },
-  { Icon: Droplets, top: 74, left: 58, size: 34, delay: 1.2, dur: 9.5, rot: -16, op: 0.18 },
-  { Icon: TreePine, top: 8, left: 40, size: 38, delay: 0.8, dur: 10.5, rot: 10, op: 0.16 },
-  { Icon: Coins, top: 54, left: 70, size: 36, delay: 1.9, dur: 8, rot: -20, op: 0.2 },
-  { Icon: Anvil, top: 90, left: 20, size: 44, delay: 0.4, dur: 12, rot: 12, op: 0.15 },
-  { Icon: Hammer, top: 38, left: 50, size: 34, delay: 2.1, dur: 9, rot: -26, op: 0.14 },
-  { Icon: Layers, top: 22, left: 34, size: 32, delay: 1.5, dur: 10, rot: 18, op: 0.15 },
-  { Icon: Package, top: 64, left: 34, size: 38, delay: 0.7, dur: 11.5, rot: -10, op: 0.15 },
-  { Icon: Lightbulb, top: 6, left: 76, size: 34, delay: 1.0, dur: 8.5, rot: 22, op: 0.2 },
-  { Icon: Battery, top: 48, left: 84, size: 30, delay: 2.3, dur: 9, rot: -14, op: 0.18 },
-  { Icon: Tv, top: 30, left: 70, size: 42, delay: 0.1, dur: 12, rot: 6, op: 0.14 },
-  { Icon: Fan, top: 70, left: 46, size: 36, delay: 1.3, dur: 10, rot: -18, op: 0.16 },
-  { Icon: Plug, top: 92, left: 64, size: 30, delay: 1.8, dur: 8, rot: 24, op: 0.18 },
-  { Icon: Keyboard, top: 4, left: 22, size: 36, delay: 2.0, dur: 11, rot: -6, op: 0.14 },
-  { Icon: Armchair, top: 44, left: 16, size: 38, delay: 1.6, dur: 9.5, rot: 14, op: 0.15 },
-  { Icon: Microwave, top: 18, left: 94, size: 34, delay: 0.25, dur: 10, rot: -12, op: 0.16 },
-  { Icon: Bolt, top: 60, left: 24, size: 28, delay: 2.4, dur: 8, rot: 20, op: 0.2 },
-  { Icon: Bike, top: 84, left: 90, size: 40, delay: 0.95, dur: 12, rot: -20, op: 0.14 },
-  { Icon: Key, top: 36, left: 92, size: 26, delay: 2.2, dur: 9, rot: 16, op: 0.18 },
-  { Icon: Recycle, top: 76, left: 6, size: 32, delay: 1.45, dur: 10.5, rot: -24, op: 0.18 },
+  // ما يلي يظهر على الشاشات المتوسطة فأكبر فقط — الهاتف لا يحتمل 28 أيقونة متحركة
+  { Icon: Newspaper, top: 86, left: 40, size: 40, delay: 1.7, dur: 11, rot: -8, op: 0.16, lg: true },
+  { Icon: Droplets, top: 74, left: 58, size: 34, delay: 1.2, dur: 9.5, rot: -16, op: 0.18, lg: true },
+  { Icon: Coins, top: 54, left: 70, size: 36, delay: 1.9, dur: 8, rot: -20, op: 0.2, lg: true },
+  { Icon: Package, top: 64, left: 34, size: 38, delay: 0.7, dur: 11.5, rot: -10, op: 0.15, lg: true },
+  { Icon: Tv, top: 30, left: 70, size: 42, delay: 0.1, dur: 12, rot: 6, op: 0.14, lg: true },
+  { Icon: Recycle, top: 16, left: 62, size: 32, delay: 1.45, dur: 10.5, rot: -24, op: 0.18, lg: true },
 ];
 
 export default function IntroSplash() {
@@ -183,6 +184,8 @@ export default function IntroSplash() {
       className={`kk-intro${phase === "leave" ? " is-leaving" : ""}`}
       role="dialog"
       aria-label="مقدمة كوكب كراكيب"
+      /* الضغط في أي مكان يتخطى المقدمة — لا ينتظر الزائر انتهاءها */
+      onClick={skip}
     >
       {/* ---------- خلفية خضراء + إضاءات ---------- */}
       <div className="kk-intro-bg" />
@@ -199,7 +202,7 @@ export default function IntroSplash() {
           return (
             <span
               key={i}
-              className="kk-scrap"
+              className={`kk-scrap${s.lg ? " hidden sm:inline-flex" : ""}`}
               style={{
                 top: `${s.top}%`,
                 insetInlineStart: `${s.left}%`,

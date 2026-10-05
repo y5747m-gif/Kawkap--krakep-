@@ -206,7 +206,10 @@ export async function POST(req: NextRequest) {
       after(() => sendOwnerWhatsAppMessage(text));
     }
 
-    return jsonOk({ product, status, whatsappUrl, isGuest });
+    // ‎guestToken‎ هو مفتاح التحكم في إعلان الضيف وهو محفوظ أصلًا في كوكي
+    // httpOnly — فلا يجوز إعادته داخل الاستجابة حيث يقرأه أي سكربت.
+    const safeProduct = { ...product, guestToken: null };
+    return jsonOk({ product: safeProduct, status, whatsappUrl, isGuest });
   } catch (e) {
     console.error(e);
     return jsonError("تعذر نشر الإعلان، حاول مرة أخرى", 500);

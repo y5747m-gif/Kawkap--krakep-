@@ -44,7 +44,7 @@ export default async function HomePage() {
 
         <div className="relative mx-auto max-w-3xl text-center">
           {/* تحية المستخدم */}
-          <p className="fade-up mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-bold text-tealx-300 backdrop-blur">
+          <p className="fade-up mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-bold text-tealx-300">
             <Sparkles size={13} />
             {user ? `أهلًا ${user.name.split(" ")[0]}! جاهز تكسب من كراكيبك؟` : "أهلًا بك في كوكب الكراكيب"}
           </p>
@@ -94,7 +94,7 @@ export default async function HomePage() {
       </Reveal>
 
       {/* ==================== شريط تحفيزي ==================== */}
-      <Reveal as="section" variant="start" className="relative overflow-hidden rounded-3xl border border-gold-400/30 bg-gradient-to-l from-gold-500/15 via-white/80 to-white/80 px-6 py-5 shadow-soft backdrop-blur sheen">
+      <Reveal as="section" variant="start" className="relative overflow-hidden rounded-3xl border border-gold-400/30 bg-gradient-to-l from-gold-500/15 via-white/90 to-white/90 px-6 py-5 shadow-soft sheen">
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <div className="flex items-center gap-3 text-center sm:text-start">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gold-500/20 text-gold-600">
@@ -204,7 +204,7 @@ export default async function HomePage() {
       </Reveal>
 
       {/* ==================== حوّل الكراكيب إلى قيمة ==================== */}
-      <Reveal as="section" variant="zoom" className="relative overflow-hidden rounded-[2.2rem] border border-white/60 bg-gradient-to-l from-tealx-500/15 via-white/90 to-planet-500/10 px-6 py-14 text-center shadow-soft backdrop-blur sm:px-12">
+      <Reveal as="section" variant="zoom" className="relative overflow-hidden rounded-[2.2rem] border border-white/60 bg-gradient-to-l from-tealx-500/15 via-white/95 to-planet-500/10 px-6 py-14 text-center shadow-soft sm:px-12">
         <div className="pointer-events-none absolute -start-16 bottom-0 opacity-20 float-slower">
           <PlanetMark size={220} />
         </div>

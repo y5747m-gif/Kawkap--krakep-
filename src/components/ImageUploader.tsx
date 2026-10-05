@@ -11,6 +11,27 @@ export interface UploadedImage {
 }
 
 /**
+ * مُعرّف محلي لصورة داخل المعالج.
+ *
+ * ‎crypto.randomUUID()‎ غير متاح إلا في «سياق آمن» (HTTPS أو localhost)؛
+ * عند فتح الموقع عبر http على عنوان شبكة محلية — وهو ما يحدث كثيرًا عند
+ * التجربة من الهاتف — كان الاستدعاء يرمي استثناءً فيفشل رفع كل صورة
+ * ويبدو للمستخدم أن «إضافة الصور لا تعمل» بلا أي سبب واضح.
+ */
+let imageSeq = 0;
+function newImageId(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* سياق غير آمن — نكمل بالبديل */
+  }
+  imageSeq += 1;
+  return `img-${Date.now().toString(36)}-${imageSeq}`;
+}
+
+/**
  * رافع صور المنتج — حتى 8 صور:
  * رفع من المعرض أو كاميرا الهاتف مباشرة، معاينة، حذف، إعادة ترتيب، وتحديد الرئيسية.
  */
@@ -25,6 +46,12 @@ export default function ImageUploader({
   const [uploading, setUploading] = useState(0);
 
   const remaining = MAX_PRODUCT_IMAGES - images.length - uploading;
+
+  // مرجع لأحدث نسخة من الصور داخل الحلقة المتسلسلة
+  const imagesRef = useRef(images);
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
 
   async function uploadFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -48,7 +75,10 @@ export default function ImageUploader({
         const res = await fetch("/api/upload", { method: "POST", body: fd });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "تعذر رفع الصورة");
-        onChange([...imagesRef.current, { id: crypto.randomUUID(), url: data.url }]);
+        const next = [...imagesRef.current, { id: newImageId(), url: data.url }];
+        // نحدّث المرجع فورًا حتى لا تضيع صورة إن عاد الرفع التالي قبل إعادة الرسم
+        imagesRef.current = next;
+        onChange(next);
       } catch (e) {
         toast(e instanceof Error ? e.message : "تعذر رفع الصورة", "error");
       } finally {
@@ -56,12 +86,6 @@ export default function ImageUploader({
       }
     }
   }
-
-  // مرجع لأحدث نسخة من الصور داخل الحلقة المتسلسلة
-  const imagesRef = useRef(images);
-  useEffect(() => {
-    imagesRef.current = images;
-  }, [images]);
 
   function remove(id: string) {
     onChange(images.filter((i) => i.id !== id));
@@ -88,7 +112,7 @@ export default function ImageUploader({
         {images.map((img, i) => (
           <div key={img.id} className="group relative overflow-hidden rounded-2xl border-2 border-planet-100 bg-white shadow-sm">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={img.url} alt={`صورة ${i + 1}`} className="aspect-square w-full object-cover" />
+            <img src={img.url} alt={`صورة ${i + 1}`} className="aspect-square w-full object-cover" loading="lazy" decoding="async" />
             {i === 0 && (
               <span className="absolute start-2 top-2 rounded-full bg-gradient-to-l from-planet-500 to-tealx-500 px-2.5 py-1 text-[10px] font-extrabold text-white shadow">
                 <Star size={10} className="inline fill-white" /> الرئيسية
