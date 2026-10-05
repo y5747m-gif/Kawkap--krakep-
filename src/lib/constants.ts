@@ -15,7 +15,12 @@ export const SETTING_KEYS = {
   OWNER_WHATSAPP: "OWNER_WHATSAPP_NUMBER",
   REQUIRE_APPROVAL: "REQUIRE_APPROVAL", // "true" = النشر بعد موافقة الإدارة
   DEMO_MODE: "DEMO_MODE", // "true" = إظهار البيانات التجريبية (للتطوير فقط)
+  /** خانات إضافية يضيفها المالك فتظهر لكل من يعرض شيئًا للبيع (JSON) */
+  CUSTOM_FIELDS: "CUSTOM_LISTING_FIELDS",
 } as const;
+
+/** الحد الأقصى للخانات الإضافية التي يضيفها المالك */
+export const MAX_OWNER_FIELDS = 10;
 
 export interface CategoryDef {
   slug: string;

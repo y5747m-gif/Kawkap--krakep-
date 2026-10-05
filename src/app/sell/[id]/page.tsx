@@ -3,6 +3,7 @@ import SellWizard from "@/components/SellWizard";
 import { getCurrentUser, getGuestToken, canManageListing } from "@/lib/auth";
 import { getProductRow, listProductImages, getCategoryById } from "@/lib/models/products";
 import { getProfile, isGuestSellerId } from "@/lib/models/users";
+import { getCustomListingFields } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
         <p className="mt-1.5 text-sm text-planet-600">{product.title} — كود {product.code}</p>
       </div>
       <SellWizard
+        ownerFields={getCustomListingFields()}
         initial={{
           productId: product.id,
           title: product.title,

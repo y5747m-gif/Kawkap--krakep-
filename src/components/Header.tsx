@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Search, Bell, ShoppingCart, User as UserIcon, LayoutDashboard, LogOut,
   Store, PackageCheck, ChevronDown, Menu, X, Home, Package, LayoutGrid,
-  MapPinned, LogIn, Camera,
+  MapPinned, LogIn, Camera, Lock,
 } from "lucide-react";
 import Logo from "./Logo";
 import SellButton from "./SellButton";
@@ -158,6 +158,20 @@ export default function Header({ user, cartCount: initialCart }: { user: Current
               <SellButton size="sm" />
             </div>
 
+            {/* قفل المالك — زر صغير يفتح لوحة الإدارة (أو دخول المالك) */}
+            <Link
+              href={user?.role === "ADMIN" ? "/admin" : "/owner"}
+              title={user?.role === "ADMIN" ? "لوحة الإدارة" : "دخول المالك"}
+              aria-label={user?.role === "ADMIN" ? "لوحة الإدارة" : "دخول المالك"}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-all active:scale-95 ${
+                user?.role === "ADMIN"
+                  ? "border-gold-400/50 bg-gold-500/15 text-gold-600 hover:bg-gold-500/25"
+                  : "border-planet-200/70 bg-white/70 text-planet-400 hover:border-planet-300 hover:text-planet-600"
+              }`}
+            >
+              <Lock size={15} />
+            </Link>
+
             {/* الإشعارات */}
             <Link href={user ? "/notifications" : "/login"} className="icon-btn" aria-label="الإشعارات">
               <Bell size={20} />
@@ -274,6 +288,13 @@ export default function Header({ user, cartCount: initialCart }: { user: Current
 
             <Link href="/sell" className="btn-sell mt-3 flex w-full items-center justify-center gap-2 px-5 py-3.5 text-sm">
               <Camera size={18} strokeWidth={2.4} /> اعرض شيئًا للبيع
+            </Link>
+
+            <Link
+              href={user?.role === "ADMIN" ? "/admin" : "/owner"}
+              className="mt-2 flex min-h-[3rem] w-full items-center justify-center gap-2 rounded-2xl border border-gold-400/40 bg-gold-500/10 text-sm font-bold text-gold-600"
+            >
+              <Lock size={16} /> {user?.role === "ADMIN" ? "لوحة الإدارة" : "دخول المالك"}
             </Link>
 
             {user ? (

@@ -110,6 +110,28 @@ export interface AdminStats {
   soldProducts: number;
   openReports: number;
   ordersByStatus: { status: string; count: number }[];
+  /* ---- متابعة العملاء: المسجّلون + من يتعامل بدون حساب ---- */
+  /** كل العملاء بدون تكرار (مسجّل + ضيف) حسب رقم الهاتف */
+  totalCustomers: number;
+  /** من أنشأ حسابًا فعلًا على الموقع */
+  registeredCustomers: number;
+  /** من طلب أو عرض للبيع بدون تسجيل دخول */
+  guestCustomers: number;
+  /** عدد العملاء (مسجّل أو ضيف) الذين أرسلوا طلبًا واحدًا على الأقل */
+  orderingCustomers: number;
+  /** طلبات وصلت بدون تسجيل دخول */
+  guestOrders: number;
+  /** طلبات من حسابات مسجّلة */
+  registeredOrders: number;
+  /** إعلانات نُشرت بدون حساب */
+  guestListings: number;
+  /** أصحاب الإعلانات بدون حساب (أرقام مختلفة) */
+  guestSellers: number;
+  ordersToday: number;
+  ordersThisWeek: number;
+  /** إجمالي قيمة الطلبات غير الملغاة */
+  ordersValue: number;
+  newCustomersThisWeek: number;
 }
 
 export function getAdminStats(): AdminStats {
@@ -121,7 +143,75 @@ export function getAdminStats(): AdminStats {
     "SELECT status, COUNT(*) AS count FROM orders GROUP BY status"
   );
 
+  const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
+  const startOfToday = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  })();
+
+  // أرقام هواتف وصلتنا بدون تسجيل دخول (طلبات ضيوف + إعلانات ضيوف)
+  const GUEST_PHONES_SQL = `
+    SELECT DISTINCT TRIM(customer_phone) AS phone FROM orders
+      WHERE buyer_id IS NULL AND TRIM(COALESCE(customer_phone, '')) != ''
+    UNION
+    SELECT DISTINCT TRIM(contact_phone) AS phone FROM products
+      WHERE seller_id = '${GUEST_SELLER_ID}' AND TRIM(COALESCE(contact_phone, '')) != ''`;
+
+  // حساب «البائع الضيف» حساب نظامي داخلي ولا يُحسب ضمن العملاء
+  const registeredCustomers = one(
+    `SELECT COUNT(*) AS c FROM users WHERE id != '${GUEST_SELLER_ID}' AND role != 'ADMIN'`
+  );
+  // الضيوف غير المسجّلين فقط (حتى لا يُحسب العميل مرتين لو سجّل لاحقًا بنفس الرقم)
+  const guestCustomers = one(
+    `SELECT COUNT(*) AS c FROM (${GUEST_PHONES_SQL}) g
+     WHERE g.phone NOT IN (SELECT TRIM(phone) FROM users)`
+  );
+  const orderingCustomers = one(
+    `SELECT COUNT(*) AS c FROM (
+       SELECT DISTINCT 'u:' || buyer_id AS k FROM orders WHERE buyer_id IS NOT NULL
+       UNION
+       SELECT DISTINCT 'g:' || TRIM(customer_phone) AS k FROM orders
+         WHERE buyer_id IS NULL AND TRIM(COALESCE(customer_phone, '')) != ''
+     )`
+  );
+
   return {
+    totalCustomers: registeredCustomers + guestCustomers,
+    registeredCustomers,
+    guestCustomers,
+    orderingCustomers,
+    guestOrders: one("SELECT COUNT(*) AS c FROM orders WHERE buyer_id IS NULL"),
+    registeredOrders: one("SELECT COUNT(*) AS c FROM orders WHERE buyer_id IS NOT NULL"),
+    guestListings: one(
+      `SELECT COUNT(*) AS c FROM products WHERE seller_id = '${GUEST_SELLER_ID}'${demoFilter}`
+    ),
+    guestSellers: one(
+      `SELECT COUNT(DISTINCT TRIM(contact_phone)) AS c FROM products
+       WHERE seller_id = '${GUEST_SELLER_ID}' AND TRIM(COALESCE(contact_phone, '')) != ''${demoFilter}`
+    ),
+    ordersToday: one("SELECT COUNT(*) AS c FROM orders WHERE created_at >= ?", startOfToday),
+    ordersThisWeek: one("SELECT COUNT(*) AS c FROM orders WHERE created_at >= ?", weekAgo),
+    ordersValue: Math.round(
+      get<{ c: number }>(
+        "SELECT COALESCE(SUM(total), 0) AS c FROM orders WHERE status NOT IN ('CANCELLED')"
+      )?.c ?? 0
+    ),
+    newCustomersThisWeek:
+      one(
+        `SELECT COUNT(*) AS c FROM users WHERE id != '${GUEST_SELLER_ID}' AND role != 'ADMIN' AND created_at >= ?`,
+        weekAgo
+      ) +
+      one(
+        `SELECT COUNT(*) AS c FROM (
+           SELECT DISTINCT TRIM(customer_phone) AS phone FROM orders
+             WHERE buyer_id IS NULL AND TRIM(COALESCE(customer_phone, '')) != '' AND created_at >= ?
+           UNION
+           SELECT DISTINCT TRIM(contact_phone) AS phone FROM products
+             WHERE seller_id = '${GUEST_SELLER_ID}' AND TRIM(COALESCE(contact_phone, '')) != '' AND created_at >= ?
+         ) g WHERE g.phone NOT IN (SELECT TRIM(phone) FROM users)`,
+        weekAgo, weekAgo
+      ),
     totalOrders: one("SELECT COUNT(*) AS c FROM orders"),
     newOrders: one("SELECT COUNT(*) AS c FROM orders WHERE status = 'NEW'"),
     processingOrders: one(
@@ -136,7 +226,7 @@ export function getAdminStats(): AdminStats {
     pendingListings: one(`SELECT COUNT(*) AS c FROM products WHERE status = 'PENDING'${demoFilter}`),
     newListingsThisWeek: one(
       `SELECT COUNT(*) AS c FROM products WHERE created_at >= ?${demoFilter}`,
-      new Date(Date.now() - 7 * 86400_000).toISOString()
+      weekAgo
     ),
     soldProducts: one(`SELECT COUNT(*) AS c FROM products WHERE status = 'SOLD'${demoFilter}`),
     openReports: one("SELECT COUNT(*) AS c FROM reports WHERE status = 'OPEN'"),

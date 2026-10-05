@@ -2,23 +2,46 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, Phone, ShieldCheck, Eye, FlaskConical, Zap, ClipboardCheck } from "lucide-react";
+import {
+  Loader2, Save, Phone, ShieldCheck, Eye, FlaskConical, Zap, ClipboardCheck,
+  ListPlus, Plus, X, GripVertical,
+} from "lucide-react";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import { toast } from "@/components/Toast";
-import { SETTING_KEYS } from "@/lib/constants";
+import { SETTING_KEYS, MAX_OWNER_FIELDS, SPEC_SUGGESTIONS } from "@/lib/constants";
 import { toWhatsAppIntl } from "@/lib/validate";
 
 /** نموذج إعدادات المنصة — OWNER_WHATSAPP_NUMBER في مكان واحد فقط */
 export default function AdminSettingsForm({
   initial,
 }: {
-  initial: { ownerWhatsapp: string; requireApproval: boolean; demoMode: boolean; currentIntl: string };
+  initial: {
+    ownerWhatsapp: string; requireApproval: boolean; demoMode: boolean;
+    currentIntl: string; customFields: string[];
+  };
 }) {
   const router = useRouter();
   const [ownerWhatsapp, setOwnerWhatsapp] = useState(initial.ownerWhatsapp);
   const [requireApproval, setRequireApproval] = useState(initial.requireApproval);
   const [demoMode, setDemoMode] = useState(initial.demoMode);
+  const [customFields, setCustomFields] = useState<string[]>(initial.customFields);
+  const [newField, setNewField] = useState("");
   const [saving, setSaving] = useState(false);
+
+  function addField(raw?: string) {
+    const label = (raw ?? newField).trim();
+    if (!label) return;
+    if (customFields.length >= MAX_OWNER_FIELDS) {
+      toast(`الحد الأقصى ${MAX_OWNER_FIELDS} خانات`, "error");
+      return;
+    }
+    if (customFields.some((f) => f === label)) {
+      toast("هذه الخانة موجودة بالفعل", "error");
+      return;
+    }
+    setCustomFields((prev) => [...prev, label.slice(0, 40)]);
+    setNewField("");
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +54,7 @@ export default function AdminSettingsForm({
           [SETTING_KEYS.OWNER_WHATSAPP]: ownerWhatsapp,
           [SETTING_KEYS.REQUIRE_APPROVAL]: requireApproval,
           [SETTING_KEYS.DEMO_MODE]: demoMode,
+          [SETTING_KEYS.CUSTOM_FIELDS]: customFields,
         }),
       });
       const data = await res.json();
@@ -70,6 +94,87 @@ export default function AdminSettingsForm({
           <span className="chip border-emerald-200 bg-emerald-50 text-emerald-700">
             <WhatsAppIcon size={12} /> كل طلب جديد يصل هنا
           </span>
+        </div>
+      </div>
+
+      {/* الخانات الإضافية — يضيفها المالك فتظهر لكل من يعرض شيئًا للبيع */}
+      <div className="rounded-3xl border border-planet-100/60 bg-white p-6">
+        <h2 className="mb-1 flex items-center gap-2 text-base font-extrabold text-planet-950">
+          <ListPlus size={18} className="text-planet-600" /> خانات إضافية في صفحة البيع
+        </h2>
+        <p className="mb-4 text-xs font-bold leading-6 text-planet-500">
+          أضف أي خانة تريدها (مثل «رقم الموتور» أو «عدد ساعات التشغيل») فتظهر تلقائيًا لكل من يعرض شيئًا للبيع
+          داخل خطوة المواصفات — وتظهر قيمتها في صفحة المنتج وفي رسالة الواتساب
+        </p>
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            className="field flex-1"
+            value={newField}
+            onChange={(e) => setNewField(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); addField(); }
+            }}
+            placeholder="اسم الخانة الجديدة — مثال: رقم الموتور"
+            maxLength={40}
+          />
+          <button
+            type="button"
+            onClick={() => addField()}
+            disabled={!newField.trim() || customFields.length >= MAX_OWNER_FIELDS}
+            className="btn-outline shrink-0 px-5 py-3 text-sm disabled:opacity-50"
+          >
+            <Plus size={16} /> أضف خانة
+          </button>
+        </div>
+
+        {customFields.length > 0 ? (
+          <ul className="mt-4 space-y-2">
+            {customFields.map((f, i) => (
+              <li
+                key={`${f}-${i}`}
+                className="flex items-center gap-2 rounded-2xl border border-planet-100 bg-planet-50/50 px-3 py-2.5"
+              >
+                <GripVertical size={14} className="shrink-0 text-planet-300" />
+                <input
+                  className="min-w-0 flex-1 bg-transparent text-sm font-extrabold text-planet-800 outline-none"
+                  value={f}
+                  maxLength={40}
+                  onChange={(e) =>
+                    setCustomFields((prev) => prev.map((x, idx) => (idx === i ? e.target.value : x)))
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => setCustomFields((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="shrink-0 rounded-xl p-1.5 text-rose-500 transition-colors hover:bg-rose-50"
+                  aria-label={`حذف خانة ${f}`}
+                >
+                  <X size={15} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-4 rounded-2xl border border-dashed border-planet-200 px-4 py-5 text-center text-xs font-bold text-planet-400">
+            لا توجد خانات إضافية بعد — الخانات الأساسية (الوزن، النوع، الحالة...) تعمل دائمًا
+          </p>
+        )}
+
+        <div className="mt-4">
+          <p className="mb-2 text-[11px] font-extrabold text-planet-500">اقتراحات سريعة:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {SPEC_SUGGESTIONS.filter((sug) => !customFields.includes(sug)).slice(0, 10).map((sug) => (
+              <button
+                key={sug}
+                type="button"
+                onClick={() => addField(sug)}
+                className="chip border-planet-200 bg-white text-[11px] text-planet-600 transition-colors hover:border-planet-400 hover:bg-planet-50"
+              >
+                <Plus size={11} /> {sug}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

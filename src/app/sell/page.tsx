@@ -5,6 +5,7 @@ import ProductCard from "@/components/ProductCard";
 import SectionHeader from "@/components/SectionHeader";
 import { getCurrentUser, getGuestToken } from "@/lib/auth";
 import { guestProducts } from "@/lib/models/products";
+import { getCustomListingFields } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export default async function SellPage() {
   const user = await getCurrentUser();
   const guestToken = user ? null : await getGuestToken();
   const myGuestListings = guestToken ? guestProducts(guestToken) : [];
+  const ownerFields = getCustomListingFields();
 
   return (
     <div className="space-y-5">
@@ -57,6 +59,7 @@ export default async function SellPage() {
               }
             : null
         }
+        ownerFields={ownerFields}
       />
 
       {myGuestListings.length > 0 && (

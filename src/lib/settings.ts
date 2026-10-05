@@ -6,13 +6,14 @@
  * (الافتراضي في constants.ts + القيمة المعدلة في قاعدة البيانات).
  */
 import { get, all, run } from "./db";
-import { OWNER_WHATSAPP_NUMBER, SETTING_KEYS } from "./constants";
+import { OWNER_WHATSAPP_NUMBER, SETTING_KEYS, MAX_OWNER_FIELDS } from "./constants";
 import { toWhatsAppIntl } from "./validate";
 
 const DEFAULTS: Record<string, string> = {
   [SETTING_KEYS.OWNER_WHATSAPP]: OWNER_WHATSAPP_NUMBER, // 01013178718
   [SETTING_KEYS.REQUIRE_APPROVAL]: "false",
   [SETTING_KEYS.DEMO_MODE]: "true",
+  [SETTING_KEYS.CUSTOM_FIELDS]: "[]",
 };
 
 export function getSetting(key: string): string {
@@ -56,4 +57,31 @@ export function getOwnerWhatsappLocal(): string {
 export function getOwnerWhatsappIntl(): string {
   const intl = toWhatsAppIntl(getOwnerWhatsappLocal());
   return intl || toWhatsAppIntl(OWNER_WHATSAPP_NUMBER) || "201013178718";
+}
+
+/* ------------------------------------------------------------------
+ * الخانات الإضافية التي يضيفها المالك
+ * ------------------------------------------------------------------
+ * يكتب المالك أسماء خانات جديدة (مثل «رقم الموتور» أو «عدد ساعات التشغيل»)
+ * فتظهر تلقائيًا لكل من يعرض شيئًا للبيع داخل خطوة المواصفات.
+ */
+export function getCustomListingFields(): string[] {
+  try {
+    const parsed = JSON.parse(getSetting(SETTING_KEYS.CUSTOM_FIELDS) || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((f) => String(f ?? "").trim())
+      .filter((f, i, arr) => f.length > 0 && arr.indexOf(f) === i)
+      .slice(0, MAX_OWNER_FIELDS);
+  } catch {
+    return [];
+  }
+}
+
+export function setCustomListingFields(fields: string[]): void {
+  const clean = fields
+    .map((f) => String(f ?? "").replace(/<[^>]*>/g, "").trim().slice(0, 40))
+    .filter((f, i, arr) => f.length > 0 && arr.indexOf(f) === i)
+    .slice(0, MAX_OWNER_FIELDS);
+  setSetting(SETTING_KEYS.CUSTOM_FIELDS, JSON.stringify(clean));
 }

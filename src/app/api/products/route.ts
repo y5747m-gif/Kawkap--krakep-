@@ -1,5 +1,5 @@
 import { NextRequest, after } from "next/server";
-import { getCurrentUser, ensureGuestToken } from "@/lib/auth";
+import { getCurrentUser, ensureGuestToken, isAdmin } from "@/lib/auth";
 import { jsonOk, jsonError, getBaseUrl } from "@/lib/http";
 import {
   searchProducts, createProduct, getCategoryBySlug, type ProductQuery,
@@ -111,7 +111,10 @@ export async function POST(req: NextRequest) {
       : [];
     if (images.length === 0) return jsonError("أضف صورة واحدة على الأقل للمنتج");
 
-    const status: ProductStatus = requiresApproval() ? "PENDING" : "ACTIVE";
+    // المالك عندما يضيف منتجًا من لوحة الإدارة يُنشر فورًا بلا مراجعة
+    const status: ProductStatus = user && isAdmin(user)
+      ? "ACTIVE"
+      : requiresApproval() ? "PENDING" : "ACTIVE";
     const keywords = sanitizeText(body.keywords, 200) || null;
 
     // ---------- البائع: حساب مسجل أو ضيف بدون حساب ----------

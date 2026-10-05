@@ -77,11 +77,15 @@ interface SpecRow extends ProductSpec {
  *    اللون، سنة الصنع، المقاسات + أي مواصفات أخرى يكتبها البائع بنفسه.
  */
 export default function SellWizard({
-  initial = {}, seller,
+  initial = {}, seller, ownerFields = [], adminMode = false,
 }: {
   initial?: SellWizardInitial;
   /** بيانات صاحب الحساب — null عندما ينشر زائر بدون تسجيل دخول */
   seller: { name: string; phone: string; gov: string | null; avatarUrl: string | null } | null;
+  /** خانات إضافية عرّفها مالك المنصة من لوحة الإدارة فتظهر للجميع */
+  ownerFields?: string[];
+  /** وضع الإدارة: المالك يضيف منتجًا من اللوحة (بدون فتح واتساب) */
+  adminMode?: boolean;
 }) {
   const router = useRouter();
   const isEdit = !!initial.productId;
@@ -120,8 +124,16 @@ export default function SellWizard({
   const [color, setColor] = useState(initial.color ?? "");
   const [year, setYear] = useState(initial.year != null ? String(initial.year) : "");
   const [dimensions, setDimensions] = useState(initial.dimensions ?? "");
+  /** قيم الخانات التي أضافها المالك — تُحفظ كمواصفات عادية باسم الخانة */
+  const [ownerValues, setOwnerValues] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = {};
+    for (const f of ownerFields) out[f] = (initial.specs ?? []).find((s) => s.label === f)?.value ?? "";
+    return out;
+  });
   const [customSpecs, setCustomSpecs] = useState<SpecRow[]>(
-    (initial.specs ?? []).map((s, i) => ({ id: `spec-${i}`, label: s.label, value: s.value }))
+    (initial.specs ?? [])
+      .filter((s) => !ownerFields.includes(s.label))
+      .map((s, i) => ({ id: `spec-${i}`, label: s.label, value: s.value }))
   );
 
   const [publishing, setPublishing] = useState(false);
@@ -141,9 +153,12 @@ export default function SellWizard({
     color: color.trim() || null,
     year: year.trim() ? Number(year) : null,
     dimensions: dimensions.trim() || null,
-    specs: customSpecs
-      .map((s) => ({ label: s.label.trim(), value: s.value.trim() }))
-      .filter((s) => s.label && s.value),
+    specs: [
+      ...ownerFields.map((f) => ({ label: f, value: (ownerValues[f] ?? "").trim() })),
+      ...customSpecs
+        .map((s) => ({ label: s.label.trim(), value: s.value.trim() }))
+        .filter((s) => !ownerFields.includes(s.label)),
+    ].filter((s) => s.label && s.value),
   };
   const previewSpecs = listSpecRows(specsPayload);
 
@@ -216,7 +231,7 @@ export default function SellWizard({
 
   async function publish() {
     // فتح نافذة واتساب مبكرًا (ضمن نقرة المستخدم) لتفادي حاجب النوافذ المنبثقة
-    if (!isEdit && typeof window !== "undefined") {
+    if (!isEdit && !adminMode && typeof window !== "undefined") {
       waWindow.current = window.open("", "_blank");
     }
 
@@ -259,6 +274,14 @@ export default function SellWizard({
       if (isEdit) {
         toast("تم تحديث إعلانك بنجاح", "success");
         router.push(`/products/${initial.productId}`);
+        return;
+      }
+
+      // ------- المالك يضيف من اللوحة: نشر مباشر بلا واتساب -------
+      if (adminMode) {
+        toast("تم نشر المنتج على الموقع", "success");
+        router.push("/admin/products");
+        router.refresh();
         return;
       }
 
@@ -517,6 +540,30 @@ export default function SellWizard({
                 />
               </div>
             </div>
+
+            {/* ---------- خانات أضافها مالك المنصة ---------- */}
+            {ownerFields.length > 0 && (
+              <div className="rounded-2xl border border-gold-300/50 bg-gold-50/60 p-4">
+                <p className="mb-0.5 text-sm font-extrabold text-planet-900">خانات إضافية من إدارة الموقع</p>
+                <p className="mb-3 text-[11px] font-bold text-planet-500">
+                  املأ ما ينطبق على شيئك — كلها اختيارية
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {ownerFields.map((f) => (
+                    <div key={f}>
+                      <label className="field-label">{f}</label>
+                      <input
+                        className="field"
+                        value={ownerValues[f] ?? ""}
+                        onChange={(e) => setOwnerValues((prev) => ({ ...prev, [f]: e.target.value }))}
+                        placeholder={f}
+                        maxLength={120}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* ---------- مواصفات إضافية يكتبها البائع ---------- */}
             <div className="rounded-2xl border-2 border-dashed border-planet-200 bg-planet-50/50 p-4">
@@ -880,20 +927,20 @@ export default function SellWizard({
                 type="button"
                 onClick={publish}
                 disabled={publishing}
-                className={`flex-[2] px-6 py-4 text-base ${isEdit ? "btn-sell" : "btn-whatsapp glow-pulse"}`}
+                className={`flex-[2] px-6 py-4 text-base ${isEdit || adminMode ? "btn-sell" : "btn-whatsapp glow-pulse"}`}
               >
                 {publishing ? (
                   <Loader2 size={19} className="animate-spin" />
-                ) : isEdit ? (
+                ) : isEdit || adminMode ? (
                   <Send size={19} />
                 ) : (
                   <WhatsAppIcon size={20} />
                 )}
-                {isEdit ? "حفظ التعديلات" : "إرسال الطلب عبر واتساب"}
+                {isEdit ? "حفظ التعديلات" : adminMode ? "نشر المنتج على الموقع" : "إرسال الطلب عبر واتساب"}
               </button>
             </div>
 
-            {!isEdit && (
+            {!isEdit && !adminMode && (
               <p className="flex items-start justify-center gap-2 rounded-2xl border border-planet-100 bg-planet-50/70 px-4 py-3 text-center text-[11px] font-bold leading-6 text-planet-600">
                 <WhatsAppIcon size={14} className="mt-0.5 shrink-0 text-[#25D366]" />
                 بضغطك «إرسال الطلب» يُحفظ إعلانك في النظام فورًا — بدون أي تسجيل — ثم يُفتح واتساب برسالة
