@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { loginUser, startSession } from "@/lib/auth";
-import { jsonOk, jsonError } from "@/lib/http";
+import { jsonOk, jsonError, isSecureRequest } from "@/lib/http";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const result = loginUser(identifier, password);
     if (!result.ok) return jsonError(result.error!);
 
-    await startSession(result.user!.id);
+    await startSession(result.user!.id, isSecureRequest(req));
     return jsonOk({ user: result.user });
   } catch (e) {
     console.error(e);

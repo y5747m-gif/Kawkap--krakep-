@@ -24,8 +24,11 @@ function OwnerLoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier, password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      // قد يعود الخادم بصفحة خطأ غير JSON (مثل 500 من الاستضافة) — نتجنب
+      // رمي خطأ تحويل فيظل الزر عالقًا بلا رسالة مفهومة للمالك.
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || "تعذر تسجيل الدخول، حاول مرة أخرى");
+      if (!data?.user) throw new Error("استجابة غير متوقعة من الخادم");
       toast(`أهلًا بك ${data.user.name} — لوحة الإدارة جاهزة`, "success");
       // استبدال الصفحة (وليس تنقّلًا داخليًا) مهم هنا: لوحة الإدارة Server
       // Component وتقرأ كوكي الجلسة من الخادم، لذلك يجب أن يبدأ طلب جديد بعد

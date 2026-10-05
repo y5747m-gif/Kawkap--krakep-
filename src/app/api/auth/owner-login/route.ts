@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { loginUser, startSession, isAdmin } from "@/lib/auth";
-import { jsonOk, jsonError } from "@/lib/http";
+import { jsonOk, jsonError, isSecureRequest } from "@/lib/http";
 
 /**
  * POST /api/auth/owner-login — دخول المالك فقط (زر القفل أعلى الموقع).
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return jsonError("هذا الحساب ليس حساب مالك المنصة — استخدم دخول العملاء العادي", 403);
     }
 
-    await startSession(result.user.id);
+    await startSession(result.user.id, isSecureRequest(req));
     // لا نسمح بتخزين استجابة تسجيل الدخول أو إعادة استخدامها من cache؛
     // الكوكي الجديدة يجب أن تُقرأ في طلب /admin التالي مباشرة.
     return jsonOk({ user: result.user }, {

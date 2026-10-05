@@ -1,9 +1,10 @@
 /** المصادقة والجلسات — حساب واحد للعميل يكون مشتريًا وبائعًا في نفس الوقت */
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import * as usersModel from "./models/users";
 import { unreadNotificationsCount } from "./models/misc";
+import { databaseStorageMode } from "./db";
 import type { CurrentUser } from "./types";
 import { normalizeEgyptianPhone } from "./validate";
 
@@ -14,6 +15,53 @@ export const SESSION_COOKIE = "kk_session";
  */
 export const GUEST_COOKIE = "kk_guest";
 const GUEST_COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // سنة
+
+/**
+ * سر توقيع الجلسات (KK_SESSION_SECRET).
+ *
+ * على الاستضافات المؤقتة التخزين (Vercel) لا تُشارك دوال الخادم نفس قاعدة
+ * البيانات: دالة تسجيل الدخول تكتب الجلسة في نسختها من /tmp، بينما دالة
+ * صفحة /admin تقرأ نسخة أخرى — فيظهر أن «المالك يسجّل الدخول ولا تفتح أي
+ * واجهة». الحل: كوكي موقّعة بـ HMAC تُتحقق أي دالة منها ذاتيًا دون قاعدة
+ * البيانات. بدون السر تبقى الجلسات مرتبطة بقاعدة البيانات (الوضع السابق
+ * الآمن على الاستضافات ذات القرص الدائم).
+ */
+const SESSION_SIGNING_SECRET = process.env.KK_SESSION_SECRET || null;
+
+/**
+ * الجلسات الموقّعة ذاتيًا مطلوبة فقط عندما لا تكون قاعدة البيانات مشتركة
+ * بين الطلبات (وضع vercel-temporary). على القرص الدائم تبقى قاعدة البيانات
+ * هي المرجع الوحيد فتعمل ميزات مثل إبطال الجلسة بدقة.
+ */
+export function signedSessionsEnabled(): boolean {
+  return Boolean(SESSION_SIGNING_SECRET) && databaseStorageMode !== "persistent";
+}
+
+function signSessionPayload(payload: string): string {
+  return createHmac("sha256", SESSION_SIGNING_SECRET!).update(payload).digest("base64url");
+}
+
+/** كوكي موقّعة: v1.<userId>.<expiresAtMs>.<dbToken>.<signature> */
+function createSignedSessionValue(userId: string, dbToken: string, expiresAtMs: number): string {
+  const payload = `v1.${userId}.${expiresAtMs}.${dbToken}`;
+  return `${payload}.${signSessionPayload(payload)}`;
+}
+
+/** يتحقق من الكوكي الموقّعة ويعيد userId — أو null لأي عبث أو انتهاء */
+function verifySignedSessionValue(value: string): string | null {
+  if (!SESSION_SIGNING_SECRET) return null;
+  const parts = value.split(".");
+  if (parts.length !== 5 || parts[0] !== "v1") return null;
+  const payload = parts.slice(0, 4).join(".");
+  const expected = signSessionPayload(payload);
+  const received = parts[4];
+  const a = Buffer.from(received);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  const expiresAt = Number(parts[2]);
+  if (!Number.isFinite(expiresAt) || expiresAt < Date.now()) return null;
+  return parts[1] || null;
+}
 
 export function hashPassword(password: string): string {
   return bcrypt.hashSync(password, 10);
@@ -28,7 +76,12 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const userId = usersModel.getUserIdBySessionToken(token);
+  // المسار المعتاد: جلسة مخزنة في قاعدة البيانات (يبطّلها تسجيل الخروج).
+  // المسار الاحتياطي: كوكي موقّعة ذاتية التحقق — لا يُفعَّل إلا عند حاجته
+  // الفعلية (تخزين مؤقت غير مشترك بين دوال الخادم) ومع توفر سر التوقيع.
+  const userId =
+    usersModel.getUserIdBySessionToken(token) ??
+    (signedSessionsEnabled() ? verifySignedSessionValue(token) : null);
   if (!userId) return null;
   const user = usersModel.getUserById(userId);
   if (!user) return null;
@@ -50,7 +103,7 @@ export async function getGuestToken(): Promise<string | null> {
 }
 
 /** رمز الزائر مع إنشائه إن لم يوجد — تُستدعى داخل Route Handlers فقط */
-export async function ensureGuestToken(): Promise<string> {
+export async function ensureGuestToken(secure?: boolean): Promise<string> {
   const cookieStore = await cookies();
   const existing = cookieStore.get(GUEST_COOKIE)?.value;
   if (existing) return existing;
@@ -59,7 +112,7 @@ export async function ensureGuestToken(): Promise<string> {
   cookieStore.set(GUEST_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: defaultCookieSecure(secure),
     path: "/",
     maxAge: GUEST_COOKIE_MAX_AGE,
   });
@@ -76,14 +129,30 @@ export function isListingOwner(
   return !!guestToken && !!product.guestToken && product.guestToken === guestToken;
 }
 
+/**
+ * علم Secure للكوكي: الأفضل أن ينبع من بروتوكول الطلب الفعلي (يمرّره الـ
+ * Route Handler عبر isSecureRequest). الاعتماد على NODE_ENV وحده كان يرسل
+ * كوكي Secure دائمًا في الإنتاج، فيرفضها المتصفح على الاستضافات العاملة
+ * بـ HTTP عادي — فلا تُحفظ الجلسة ويعود المالك لصفحة الدخول بلا أي واجهة.
+ */
+function defaultCookieSecure(secure: boolean | undefined): boolean {
+  return secure ?? process.env.NODE_ENV === "production";
+}
+
 /** إنشاء جلسة وضبط الكوكي — تُستدعى داخل Route Handlers فقط */
-export async function startSession(userId: string): Promise<void> {
+export async function startSession(userId: string, secure?: boolean): Promise<void> {
   const { token, expiresAt } = usersModel.createSession(userId);
+  const expiresAtMs = new Date(expiresAt).getTime();
+  // على التخزين المؤقت غير المشترك تُخزَّن قيمة موقّعة داخل الكوكي نفسها
+  // لتتحقق منها أي دالة خادم حتى لو لم ترَ صف الجلسة في قاعدة البيانات.
+  const cookieValue = signedSessionsEnabled()
+    ? createSignedSessionValue(userId, token, expiresAtMs)
+    : token;
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
+  cookieStore.set(SESSION_COOKIE, cookieValue, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: defaultCookieSecure(secure),
     path: "/",
     expires: new Date(expiresAt),
     maxAge: 30 * 24 * 60 * 60,
@@ -93,7 +162,12 @@ export async function startSession(userId: string): Promise<void> {
 export async function endSession(): Promise<void> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (token) usersModel.deleteSession(token);
+  if (token) {
+    usersModel.deleteSession(token);
+    // الكوكي الموقّعة تحمل رمز الجلسة في جزئها الرابع — احذف الصف أيضًا.
+    const parts = token.split(".");
+    if (parts.length === 5 && parts[0] === "v1") usersModel.deleteSession(parts[3]);
+  }
   cookieStore.set(SESSION_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
 }
 

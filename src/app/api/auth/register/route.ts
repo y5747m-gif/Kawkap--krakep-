@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { registerUser, startSession } from "@/lib/auth";
 import { normalizeEgyptianPhone, isValidEmail, sanitizeText } from "@/lib/validate";
-import { jsonOk, jsonError } from "@/lib/http";
+import { jsonOk, jsonError, isSecureRequest } from "@/lib/http";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const result = registerUser({ name, phone, email: email || undefined, password, gov, area });
     if (!result.ok) return jsonError(result.error!);
 
-    await startSession(result.user!.id);
+    await startSession(result.user!.id, isSecureRequest(req));
     return jsonOk({ user: result.user });
   } catch (e) {
     console.error(e);

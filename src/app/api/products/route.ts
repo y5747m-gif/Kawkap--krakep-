@@ -1,6 +1,6 @@
 import { NextRequest, after } from "next/server";
 import { getCurrentUser, ensureGuestToken, isAdmin } from "@/lib/auth";
-import { jsonOk, jsonError, getBaseUrl } from "@/lib/http";
+import { jsonOk, jsonError, getBaseUrl, isSecureRequest } from "@/lib/http";
 import {
   searchProducts, createProduct, getCategoryBySlug, type ProductQuery,
 } from "@/lib/models/products";
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
     const isGuest = !user;
     const guestName = isGuest ? (sanitizeText(body.sellerName, 60) || null) : null;
     const sellerId = user ? user.id : ensureGuestSeller();
-    const guestToken = isGuest ? await ensureGuestToken() : null;
+    const guestToken = isGuest ? await ensureGuestToken(isSecureRequest(req)) : null;
     const sellerDisplayName = user?.name ?? guestName ?? GUEST_SELLER_NAME;
 
     const product = createProduct({
