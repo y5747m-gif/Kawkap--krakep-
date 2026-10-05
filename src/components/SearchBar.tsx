@@ -58,7 +58,7 @@ export default function SearchBar({ autoFocus = false }: { autoFocus?: boolean }
     <div ref={boxRef} className="relative w-full">
       <form
         onSubmit={submit}
-        className="flex items-center gap-2 rounded-full border border-white/60 bg-white/90 py-2 pe-2 ps-4 shadow-lift backdrop-blur-xl transition-shadow focus-within:shadow-glow sm:gap-2.5 sm:ps-5"
+        className="flex items-center gap-2 rounded-full border border-white/60 bg-white/95 py-2 pe-2 ps-4 shadow-lift transition-shadow focus-within:shadow-glow sm:gap-2.5 sm:ps-5"
       >
         <Search size={20} className="hidden shrink-0 text-planet-500 sm:block" />
         <input
@@ -105,7 +105,7 @@ export default function SearchBar({ autoFocus = false }: { autoFocus?: boolean }
             >
               {p.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.image} alt="" className="h-11 w-11 rounded-xl object-cover" />
+                <img src={p.image} alt="" className="h-11 w-11 rounded-xl object-cover" loading="lazy" decoding="async" />
               ) : (
                 <span className="h-11 w-11 rounded-xl bg-planet-100" />
               )}
@@ -131,7 +131,7 @@ export default function SearchBar({ autoFocus = false }: { autoFocus?: boolean }
           <button
             key={word}
             onClick={() => router.push(`/products?q=${encodeURIComponent(word)}`)}
-            className="chip border-white/60 bg-white/80 text-planet-700 shadow-sm backdrop-blur transition-colors hover:border-planet-300 hover:text-planet-700"
+            className="chip border-white/60 bg-white/90 text-planet-700 shadow-sm transition-colors hover:border-planet-300 hover:text-planet-700"
           >
             {word}
           </button>

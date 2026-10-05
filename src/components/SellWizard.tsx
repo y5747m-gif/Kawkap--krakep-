@@ -137,6 +137,8 @@ export default function SellWizard({
   );
 
   const [publishing, setPublishing] = useState(false);
+  /** يُملأ فقط عندما يحجب المتصفح فتح واتساب تلقائيًا بعد نشر الإعلان */
+  const [published, setPublished] = useState<{ whatsappUrl: string; nextUrl: string } | null>(null);
   /** نافذة واتساب تُفتح لحظة الضغط (داخل حدث المستخدم) حتى لا يحجبها المتصفح */
   const waWindow = useRef<Window | null>(null);
 
@@ -286,25 +288,73 @@ export default function SellWizard({
       }
 
       // ------- الطلب يصل تلقائيًا لواتساب مالك المنصة -------
+      const nextUrl =
+        data.status === "PENDING"
+          ? isGuest
+            ? "/sell"
+            : "/account?tab=selling"
+          : `/products/${data.product.id}?sent=1`;
+
+      let whatsappOpened = true;
       if (data.whatsappUrl) {
         if (waWindow.current && !waWindow.current.closed) {
           waWindow.current.location.href = data.whatsappUrl;
         } else {
-          window.open(data.whatsappUrl, "_blank", "noopener");
+          // قد يمنع حاجب النوافذ المنبثقة الفتح تمامًا — وكان الإعلان حينها
+          // يُنشر بلا أن يصل إشعار للإدارة وبلا أن يفهم البائع ما حدث.
+          whatsappOpened = !!window.open(data.whatsappUrl, "_blank", "noopener");
         }
       }
 
-      if (data.status === "PENDING") {
-        toast("تم إرسال طلبك للإدارة عبر واتساب — سيظهر الإعلان بعد المراجعة", "success");
-        router.push(isGuest ? "/sell" : "/account?tab=selling");
-      } else {
-        toast("تم نشر إعلانك ووصل الطلب لإدارة كوكب كراكيب على واتساب", "success");
-        router.push(`/products/${data.product.id}?sent=1`);
+      if (!whatsappOpened && data.whatsappUrl) {
+        // نعرض للبائع رابطًا ظاهرًا بدل الفتح التلقائي المحجوب
+        setPublished({ whatsappUrl: data.whatsappUrl as string, nextUrl });
+        setPublishing(false);
+        return;
       }
+
+      toast(
+        data.status === "PENDING"
+          ? "تم إرسال طلبك للإدارة عبر واتساب — سيظهر الإعلان بعد المراجعة"
+          : "تم نشر إعلانك ووصل الطلب لإدارة كوكب كراكيب على واتساب",
+        "success"
+      );
+      router.push(nextUrl);
     } catch (e) {
       toast(e instanceof Error ? e.message : "حدث خطأ", "error");
       setPublishing(false);
     }
+  }
+
+  // نُشر الإعلان لكن المتصفح منع فتح واتساب — نعرض الرابط بوضوح بدل الصمت
+  if (published) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4 rounded-3xl border border-planet-100 bg-white p-6 text-center shadow-soft">
+        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-planet-50 text-planet-600">
+          <CheckCircle2 size={32} />
+        </span>
+        <h2 className="text-xl font-black text-planet-950">تم نشر إعلانك</h2>
+        <p className="text-sm leading-7 text-planet-600">
+          منع متصفحك فتح واتساب تلقائيًا. اضغط الزر بالأسفل لإرسال تفاصيل الإعلان
+          لإدارة كوكب كراكيب — إعلانك محفوظ بالفعل في كل الأحوال.
+        </p>
+        <a
+          href={published.whatsappUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-whatsapp w-full px-6 py-3.5 text-base"
+        >
+          <WhatsAppIcon size={19} /> أبلغ الإدارة على واتساب
+        </a>
+        <button
+          type="button"
+          onClick={() => router.push(published.nextUrl)}
+          className="btn-outline w-full px-6 py-3 text-sm"
+        >
+          متابعة إلى الإعلان
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -856,7 +906,7 @@ export default function SellWizard({
               <div className="relative aspect-[16/9] bg-planet-50">
                 {images[0] ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={images[0].url} alt={title} className="h-full w-full object-cover" />
+                  <img src={images[0].url} alt={title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-planet-300"><Package size={44} /></div>
                 )}
@@ -903,7 +953,7 @@ export default function SellWizard({
                 <div className="flex items-center gap-2.5 border-t border-planet-50 pt-3.5">
                   {seller?.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={seller.avatarUrl} alt={displayName} className="h-9 w-9 rounded-full object-cover" />
+                    <img src={seller.avatarUrl} alt={displayName} className="h-9 w-9 rounded-full object-cover" loading="lazy" decoding="async" />
                   ) : (
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-planet-500 to-tealx-500 text-sm font-black text-white">
                       {displayName.charAt(0)}

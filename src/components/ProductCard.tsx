@@ -17,7 +17,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group spot sheen relative flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/85 shadow-soft backdrop-blur transition-all duration-300 hover:-translate-y-1.5 hover:border-planet-200 hover:shadow-glowLg"
+      className="group spot sheen relative flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-soft transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 hover:border-planet-200 hover:shadow-glowLg"
     >
       {/* الصورة */}
       <div className="relative aspect-[4/3] overflow-hidden bg-planet-50">
@@ -27,8 +27,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
             src={product.image}
             alt={product.title}
             loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" decoding="async" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-planet-100 to-tealx-500/20 text-planet-400">
             <Package size={40} strokeWidth={1.4} />
@@ -43,7 +42,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
               </span>
             )}
             {product.status !== "ACTIVE" && (
-              <span className="chip border-white/60 bg-planet-950/80 text-white backdrop-blur">
+              <span className="chip border-white/60 bg-planet-950/85 text-white">
                 {product.status === "SOLD" ? "مباع" : product.status === "PAUSED" ? "موقوف مؤقتًا" : "غير متاح"}
               </span>
             )}
@@ -93,7 +92,7 @@ export default function ProductCard({ product }: { product: ProductCardData }) {
           <div className="flex min-w-0 items-center gap-2">
             {product.sellerAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={product.sellerAvatar} alt={product.sellerName} className="h-6 w-6 rounded-full object-cover" />
+              <img src={product.sellerAvatar} alt={product.sellerName} className="h-6 w-6 rounded-full object-cover" loading="lazy" decoding="async" />
             ) : (
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-planet-400 to-tealx-500 text-[10px] font-extrabold text-white">
                 {product.sellerName.charAt(0)}

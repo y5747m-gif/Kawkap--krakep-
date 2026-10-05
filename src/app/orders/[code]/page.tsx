@@ -45,12 +45,12 @@ export default async function OrderPage({
       {isNew && (
         <div className="fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-planet-600 via-planet-700 to-planet-900 p-5 text-center text-white shadow-lift sm:p-8">
           <div className="pointer-events-none absolute -top-16 start-1/4 h-48 w-48 rounded-full bg-tealx-400/30 blur-3xl" />
-          <span className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/15 backdrop-blur">
+          <span className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/15">
             <CircleCheckBig size={42} className="text-tealx-300" />
           </span>
           <h1 className="relative text-2xl font-black">تم إنشاء طلبك بنجاح.</h1>
           <p className="relative mt-2 text-sm text-white/80">سيتم التواصل معك لتأكيد التفاصيل.</p>
-          <div className="relative mx-auto mt-5 inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 backdrop-blur">
+          <div className="relative mx-auto mt-5 inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3">
             <span className="text-xs font-bold text-white/70">رقم الطلب:</span>
             <span className="text-lg font-black tracking-wide">#{order.orderCode}</span>
           </div>
@@ -136,7 +136,7 @@ export default async function OrderPage({
             <Link key={item.id} href={`/products/${item.productId}`} className="flex items-center gap-3.5 p-4 transition-colors hover:bg-planet-50/50">
               {item.productImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.productImage} alt="" className="h-16 w-20 rounded-2xl object-cover" />
+                <img src={item.productImage} alt="" className="h-16 w-20 rounded-2xl object-cover" loading="lazy" decoding="async" />
               ) : (
                 <span className="flex h-16 w-20 items-center justify-center rounded-2xl bg-planet-100 text-planet-300">
                   <PackageSearch size={22} />

@@ -46,7 +46,7 @@ export default function FavoriteButton({
       <button
         onClick={toggle}
         aria-label="إضافة للمفضلة"
-        className="absolute bottom-2.5 end-2.5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-soft backdrop-blur transition-transform hover:scale-110 active:scale-90"
+        className="absolute bottom-2.5 end-2.5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-soft transition-transform hover:scale-110 active:scale-90"
       >
         {loading ? (
           <Loader2 size={18} className="animate-spin text-planet-500" />

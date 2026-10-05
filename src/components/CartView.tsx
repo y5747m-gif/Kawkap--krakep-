@@ -93,7 +93,7 @@ export default function CartView({ initialItems }: { initialItems: CartItemData[
                     <Link href={`/products/${item.productId}`} className="shrink-0">
                       {item.product.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.product.image} alt={item.product.title} className="h-20 w-24 rounded-2xl object-cover" />
+                        <img src={item.product.image} alt={item.product.title} className="h-20 w-24 rounded-2xl object-cover" loading="lazy" decoding="async" />
                       ) : (
                         <span className="flex h-20 w-24 items-center justify-center rounded-2xl bg-planet-100 text-planet-300">
                           <ShoppingCart size={24} />

@@ -32,10 +32,17 @@
 }
 
 html {
-  scroll-behavior: smooth;
   /* يمنع تكبير الخط التلقائي عند تدوير الهاتف */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+/* التمرير الناعم يُبطئ الإحساس بالموقع على الأجهزة الضعيفة، فنفعّله فقط
+   لمن لم يطلب تقليل الحركة — ولا نفرضه على المتصفحات التي تتعامل معه بثقل. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
@@ -110,17 +117,43 @@ textarea {
 }
 
 @layer components {
-  /* ---------- Glass ---------- */
+  /* ---------- Glass ----------
+     ملاحظة أداء: ‎backdrop-filter‎ من أغلى خصائص CSS، وكان مطبّقًا على أكثر
+     من خمسين عنصرًا في الصفحة الواحدة (كل بطاقة منتج، كل حقل، كل زر ثانوي)
+     فيُجبر المتصفح على التقاط الخلفية وتمويهها لكل عنصر في كل إطار — وهذا
+     كان السبب الأول للتهنيق أثناء التمرير على الهاتف.
+     أصبح التمويه محصورًا في عناصر «هيكل» قليلة وثابتة (الشريط العلوي
+     والسفلي والنوافذ) عبر الصنف ‎.kk-blur‎، وبقية البطاقات تستخدم خلفية
+     بيضاء شبه معتمة تعطي نفس الإحساس بلا أي تكلفة. */
   .glass {
-    @apply border border-white/70 bg-white/75 shadow-soft backdrop-blur-xl;
+    @apply border border-white/70 shadow-soft;
+    background-color: rgba(255, 255, 255, 0.88);
   }
   .glass-dark {
-    @apply border border-white/15 bg-white/10 shadow-soft backdrop-blur-xl;
+    @apply border border-white/15 shadow-soft;
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+
+  /* تمويه الخلفية — للعناصر الثابتة القليلة فقط (ترويسة/شريط سفلي/نوافذ) */
+  .kk-blur {
+    backdrop-filter: blur(12px);
   }
 
   /* ---------- الأزرار ---------- */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl font-bold transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl font-bold disabled:cursor-not-allowed disabled:opacity-50;
+    /* ‎transition-all‎ يراقب كل الخصائص (ومنها خصائص التخطيط) — نحصرها في
+       الخصائص المركّبة فقط حتى لا يعيد المتصفح حساب التخطيط عند كل تحويم. */
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease,
+      opacity 0.2s ease;
+  }
+  .btn:active {
+    transform: scale(0.95);
   }
 
   /* الزر الرئيسي للبيع — Green Gradient + Glow */
@@ -130,12 +163,20 @@ textarea {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18) inset, 0 10px 30px rgba(31, 162, 124, 0.4);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
   }
+  /* اللمعة كانت تعمل بلا توقف رغم أن شفافيتها صفر (غير مرئية إطلاقًا) —
+     أي إطار رسم مهدور كل 2.8 ثانية لكل زر بيع في الصفحة. الآن تعمل
+     وتظهر عند التحويم فقط. */
   .btn-sell::after {
     content: "";
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    @apply pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300;
     background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.35) 50%, transparent 60%);
     background-size: 220% 100%;
-    animation: shimmer 2.8s linear infinite;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-sell:hover::after {
+      opacity: 1;
+      animation: shimmer 2.8s linear infinite;
+    }
   }
   .btn-sell:hover {
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25) inset, 0 14px 44px rgba(31, 162, 124, 0.6);
@@ -151,7 +192,8 @@ textarea {
   }
 
   .btn-outline {
-    @apply btn border-2 border-planet-500/40 bg-white/70 text-planet-700 backdrop-blur;
+    @apply btn border-2 border-planet-500/40 text-planet-700;
+    background-color: rgba(255, 255, 255, 0.9);
   }
   .btn-outline:hover {
     @apply border-planet-500 bg-white shadow-soft;
@@ -175,7 +217,9 @@ textarea {
 
   /* ---------- الحقول ---------- */
   .field {
-    @apply w-full rounded-2xl border border-planet-200/80 bg-white/85 px-4 py-3 text-[15px] text-planet-950 shadow-sm outline-none backdrop-blur transition-all placeholder:text-planet-400/70;
+    @apply w-full rounded-2xl border border-planet-200/80 px-4 py-3 text-[15px] text-planet-950 shadow-sm outline-none placeholder:text-planet-400/70;
+    background-color: rgba(255, 255, 255, 0.95);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .field:focus {
     @apply border-planet-400 ring-4 ring-planet-100;
@@ -204,7 +248,8 @@ textarea {
 
   /* ---------- الشريط العلوي ---------- */
   .kk-header {
-    @apply sticky top-0 z-40 border-b border-white/60 bg-white/85 backdrop-blur-xl;
+    @apply sticky top-0 z-40 border-b border-white/60 bg-white/85;
+    backdrop-filter: blur(12px);
     padding-top: var(--kk-safe-top);
     padding-left: var(--kk-safe-left);
     padding-right: var(--kk-safe-right);
@@ -220,7 +265,8 @@ textarea {
 
   /* ---------- الشريط السفلي (الهاتف) ---------- */
   .kk-bottom-nav {
-    @apply fixed inset-x-0 bottom-0 z-40 border-t border-planet-100 bg-white/95 backdrop-blur-xl md:hidden;
+    @apply fixed inset-x-0 bottom-0 z-40 border-t border-planet-100 bg-white/95 md:hidden;
+    backdrop-filter: blur(12px);
     padding-bottom: var(--kk-safe-bottom);
     padding-left: var(--kk-safe-left);
     padding-right: var(--kk-safe-right);
@@ -253,12 +299,26 @@ textarea {
     @apply block w-full truncate px-0.5 text-center;
   }
   /* زر البيع العائم في منتصف الشريط السفلي */
+  /* زر «بيع» العائم.
+     كان يحمل ‎animate-pulse-glow‎ وهي حركة ‎box-shadow‎ لا نهائية. ولأن الزر
+     ثابت على الشاشة في كل صفحة، كان المتصفح يعيد رسم الظل ومحيطه 60 مرة في
+     الثانية طوال الوقت — السبب الأوضح للتهنيق على الهواتف واستنزاف البطارية.
+     الآن التوهج ثابت، ويزداد عند التحويم/الضغط فقط عبر ‎transition‎. */
   .kk-sell-fab {
     @apply absolute left-1/2 flex h-[3.4rem] w-[3.4rem] -translate-x-1/2 flex-col items-center justify-center gap-0.5 rounded-full;
     top: -1.25rem;
-    /* إطار أبيض لا يتعارض مع حركة التوهج (التي تستخدم box-shadow) */
     outline: 4px solid rgba(255, 255, 255, 0.92);
     outline-offset: 0;
+    box-shadow: 0 0 22px rgba(31, 162, 124, 0.5), 0 10px 32px rgba(31, 162, 124, 0.32);
+    transition: box-shadow 0.25s ease, transform 0.18s ease;
+  }
+  .kk-sell-fab:active {
+    transform: translateX(-50%) scale(0.94);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .kk-sell-fab:hover {
+      box-shadow: 0 0 34px rgba(31, 162, 124, 0.75), 0 14px 44px rgba(20, 184, 166, 0.45);
+    }
   }
 
   /* ---------- حاوية المحتوى: تترك مساحة للشريط السفلي ---------- */
@@ -320,7 +380,7 @@ textarea {
 
 /* ---------- Leaflet ---------- */
 .leaflet-container {
-  font-family: "Cairo", system-ui, sans-serif;
+  font-family: "Cairo Variable", "Cairo", system-ui, sans-serif;
   z-index: 0;
 }
 .leaflet-popup-content-wrapper {
@@ -392,7 +452,7 @@ html[data-kk-intro="done"] .kk-intro {
   overflow: hidden;
   isolation: isolate;
   /* الحركة الثانية شبكة أمان: لو تعطّل جافاسكربت تختفي المقدمة وحدها */
-  animation: kk-intro-in 0.5s ease both, kk-intro-failsafe 0.4s linear 9s forwards;
+  animation: kk-intro-in 0.4s ease both, kk-intro-failsafe 0.4s linear 6s forwards;
 }
 
 @keyframes kk-intro-failsafe {
@@ -410,9 +470,9 @@ html[data-kk-intro="done"] .kk-intro {
 }
 
 @keyframes kk-intro-out {
-  0% { opacity: 1; transform: scale(1); filter: blur(0); }
-  60% { opacity: 0.55; transform: scale(1.06); filter: blur(2px); }
-  100% { opacity: 0; transform: scale(1.22); filter: blur(10px); visibility: hidden; }
+  0% { opacity: 1; transform: scale(1); }
+  60% { opacity: 0.55; transform: scale(1.06); }
+  100% { opacity: 0; transform: scale(1.18); visibility: hidden; }
 }
 
 /* خلفية خضراء عميقة */
@@ -428,9 +488,12 @@ html[data-kk-intro="done"] .kk-intro {
 .kk-intro-aurora {
   position: absolute;
   border-radius: 999px;
-  filter: blur(70px);
   mix-blend-mode: screen;
-  animation: kk-aurora 9s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .kk-intro-aurora {
+    animation: kk-aurora 9s ease-in-out infinite alternate;
+  }
 }
 .kk-intro-aurora-1 {
   width: 46vmax; height: 46vmax;
@@ -466,8 +529,12 @@ html[data-kk-intro="done"] .kk-intro {
   background-size: 64px 64px;
   mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 72%);
   -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 0%, transparent 72%);
-  animation: kk-grid-drift 18s linear infinite;
   opacity: 0.55;
+}
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .kk-intro-grid {
+    animation: kk-grid-drift 18s linear infinite;
+  }
 }
 
 @keyframes kk-grid-drift {
@@ -477,15 +544,21 @@ html[data-kk-intro="done"] .kk-intro {
 
 /* شعاع ضوئي يمسح الشاشة */
 .kk-intro-beam {
-  position: absolute;
-  top: -60%;
-  inset-inline-start: 50%;
-  width: 60vmax;
-  height: 220%;
-  transform-origin: 50% 0;
-  background: conic-gradient(from 180deg at 50% 0%, transparent 0deg, rgba(45, 212, 191, 0.14) 12deg, transparent 26deg);
-  animation: kk-beam 7s linear infinite;
-  pointer-events: none;
+  display: none;
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .kk-intro-beam {
+    display: block;
+    position: absolute;
+    top: -60%;
+    inset-inline-start: 50%;
+    width: 60vmax;
+    height: 220%;
+    transform-origin: 50% 0;
+    background: conic-gradient(from 180deg at 50% 0%, transparent 0deg, rgba(45, 212, 191, 0.14) 12deg, transparent 26deg);
+    animation: kk-beam 7s linear infinite;
+    pointer-events: none;
+  }
 }
 
 @keyframes kk-beam {
@@ -504,12 +577,10 @@ html[data-kk-intro="done"] .kk-intro {
 .kk-scrap {
   position: absolute;
   display: inline-flex;
-  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
   animation-name: kk-scrap-float;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
   animation-direction: alternate;
-  will-change: transform;
 }
 
 @keyframes kk-scrap-float {
@@ -531,7 +602,7 @@ html[data-kk-intro="done"] .kk-intro {
 
 .kk-intro-planet {
   position: relative;
-  animation: kk-planet-arrive 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: kk-planet-arrive 1.15s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes kk-planet-arrive {
@@ -548,7 +619,7 @@ html[data-kk-intro="done"] .kk-intro {
   border-radius: 999px;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.9), rgba(45, 212, 191, 0.35) 35%, transparent 70%);
   opacity: 0;
-  animation: kk-flash 1.1s ease-out 0.95s both;
+  animation: kk-flash 0.9s ease-out 0.62s both;
   pointer-events: none;
 }
 
@@ -581,8 +652,7 @@ html[data-kk-intro="done"] .kk-intro {
 
 .kk-letter {
   display: inline-block;
-  animation: kk-letter-drop 0.95s cubic-bezier(0.22, 1.2, 0.36, 1) both;
-  will-change: transform, opacity;
+  animation: kk-letter-drop 0.8s cubic-bezier(0.22, 1.2, 0.36, 1) both;
   background: linear-gradient(180deg, #ffffff 0%, #d7f5e6 55%, #7dd7b5 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -594,19 +664,14 @@ html[data-kk-intro="done"] .kk-intro {
   0% {
     opacity: 0;
     transform: translate3d(0, -190px, 0) scale(0.2) rotate(-35deg);
-    filter: blur(8px) drop-shadow(0 0 26px rgba(255, 255, 255, 0.9));
   }
-  45% {
-    opacity: 1;
-    filter: blur(0) drop-shadow(0 0 22px rgba(45, 212, 191, 0.9));
-  }
+  45% { opacity: 1; }
   62% { transform: translate3d(0, 16px, 0) scale(1.12) rotate(4deg); }
   78% { transform: translate3d(0, -9px, 0) scale(0.97) rotate(-2deg); }
   90% { transform: translate3d(0, 4px, 0) scale(1.01) rotate(1deg); }
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
-    filter: blur(0) drop-shadow(0 6px 22px rgba(45, 212, 191, 0.45));
   }
 }
 
@@ -617,7 +682,7 @@ html[data-kk-intro="done"] .kk-intro {
   letter-spacing: 0.02em;
   color: #9ff0d5;
   text-shadow: 0 2px 18px rgba(45, 212, 191, 0.5);
-  animation: kk-fade-rise 0.9s ease 2.45s both;
+  animation: kk-fade-rise 0.6s ease 1.5s both;
 }
 
 @keyframes kk-fade-rise {
@@ -632,7 +697,7 @@ html[data-kk-intro="done"] .kk-intro {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.14);
   overflow: hidden;
-  animation: kk-fade-rise 0.6s ease 2.7s both;
+  animation: kk-fade-rise 0.4s ease 1.62s both;
 }
 
 .kk-intro-bar > span {
@@ -642,7 +707,7 @@ html[data-kk-intro="done"] .kk-intro {
   border-radius: 999px;
   background: linear-gradient(90deg, #2dd4bf, #1fa27c, #fbbf24);
   box-shadow: 0 0 16px rgba(45, 212, 191, 0.8);
-  animation: kk-bar 1.3s ease-out 2.65s forwards;
+  animation: kk-bar 0.8s ease-out 1.62s forwards;
 }
 
 @keyframes kk-bar {
@@ -667,7 +732,7 @@ html[data-kk-intro="done"] .kk-intro {
   color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(8px);
   transition: all 0.2s ease;
-  animation: kk-fade-rise 0.6s ease 1.6s both;
+  animation: kk-fade-rise 0.4s ease 0.5s both;
 }
 .kk-intro-skip:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -787,51 +852,60 @@ html[data-kk-intro="done"] .kk-intro {
   pointer-events: none;
 }
 
+/* ملاحظة أداء مهمة:
+   كانت هذه الهالات ثلاث طبقات ضخمة (‎38vmax‎) عليها ‎filter: blur(90px)‎
+   وحركة ‎transform/scale‎ لا تتوقف. تمويه بهذا الحجم يُعاد حسابه على
+   وحدة الرسم مع كل إطار أثناء الحركة، فيأكل الـ GPU ويجعل التمرير
+   «يهنّق» على الهواتف ويستهلك البطارية طوال الوقت.
+   البديل: نفس التدرجات اللونية مرسومة مرة واحدة بلا ‎filter‎ وبلا حركة —
+   المظهر شبه مطابق لأن التدرج الشعاعي ناعم أصلًا، والتكلفة صفر. */
 .kk-ambient-blob {
   position: absolute;
   border-radius: 999px;
-  filter: blur(90px);
-  opacity: 0.55;
-  animation: kk-aurora 14s ease-in-out infinite alternate;
+  opacity: 0.85;
 }
 .kk-ambient-1 {
-  width: 38vmax; height: 38vmax;
-  top: -12vmax; inset-inline-end: -8vmax;
-  background: radial-gradient(circle, rgba(45, 212, 191, 0.35), transparent 65%);
+  width: 56vmax; height: 56vmax;
+  top: -20vmax; inset-inline-end: -16vmax;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.22), rgba(45, 212, 191, 0.07) 45%, transparent 70%);
 }
 .kk-ambient-2 {
-  width: 34vmax; height: 34vmax;
-  bottom: 8vmax; inset-inline-start: -10vmax;
-  background: radial-gradient(circle, rgba(31, 162, 124, 0.3), transparent 65%);
-  animation-delay: 2s;
+  width: 50vmax; height: 50vmax;
+  bottom: 2vmax; inset-inline-start: -18vmax;
+  background: radial-gradient(circle, rgba(31, 162, 124, 0.2), rgba(31, 162, 124, 0.06) 45%, transparent 70%);
 }
 .kk-ambient-3 {
-  width: 24vmax; height: 24vmax;
-  top: 42%; inset-inline-start: 46%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.16), transparent 65%);
-  animation-delay: 4s;
+  width: 34vmax; height: 34vmax;
+  top: 38%; inset-inline-start: 42%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.04) 45%, transparent 70%);
 }
 
-/* خردوات باهتة تطفو خلف الموقع */
+/* خردوات باهتة تطفو خلف الموقع — على الشاشات الكبيرة فقط ولمن لا يطلب
+   تقليل الحركة؛ حركة ‎transform‎ خالصة بلا ‎will-change‎ دائم. */
 .kk-ambient-scrap {
   position: absolute;
-  color: rgba(16, 104, 84, 0.1);
-  animation: kk-scrap-float 12s ease-in-out infinite alternate;
+  color: rgba(16, 104, 84, 0.09);
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .kk-ambient-scrap {
+    animation: kk-scrap-float 14s ease-in-out infinite alternate;
+  }
 }
 
 /* ============================================================
    4) ظهور العناصر عند التمرير (Scroll Reveal)
    ============================================================ */
+/* أداء: كان كل عنصر ظاهر يحتفظ بـ ‎will-change‎ و‎filter: blur()‎ إلى الأبد،
+   فيُنشئ المتصفح طبقة رسم مستقلة لكل بطاقة ويظل يمرّر عليها مرشّح تمويه —
+   مع عشرات البطاقات في صفحة الكراكيب كان هذا يُثقل الذاكرة والتمرير.
+   الآن: حركة شفافية وإزاحة فقط (مجانية على الـ GPU) بلا تمويه ولا طبقات دائمة. */
 .reveal {
   opacity: 0;
   transform: translateY(26px);
   transition:
-    opacity 0.75s cubic-bezier(0.22, 0.8, 0.36, 1),
-    transform 0.75s cubic-bezier(0.22, 0.8, 0.36, 1),
-    filter 0.75s ease;
+    opacity 0.6s cubic-bezier(0.22, 0.8, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 0.8, 0.36, 1);
   transition-delay: var(--kk-delay, 0ms);
-  filter: blur(4px);
-  will-change: transform, opacity;
 }
 .reveal-zoom { transform: scale(0.94); }
 .reveal-start { transform: translateX(-28px); }
@@ -841,68 +915,97 @@ html[data-kk-intro="done"] .kk-intro {
 .reveal.is-in {
   opacity: 1;
   transform: none;
-  filter: blur(0);
 }
 
 /* ============================================================
    5) لمعات وإضاءات تفاعلية
    ============================================================ */
 
-/* بطاقة تضيء تحت المؤشر */
+/* بطاقة تضيء تحت المؤشر — أجهزة المؤشر فقط (لا معنى لها على اللمس،
+   وكانت تضيف طبقة تدرّج زائدة لكل بطاقة على الهاتف بلا فائدة) */
 .spot {
   position: relative;
   isolation: isolate;
 }
-.spot::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  background: radial-gradient(
-    240px circle at var(--kk-mx, 50%) var(--kk-my, 50%),
-    rgba(45, 212, 191, 0.22),
-    transparent 65%
-  );
-  pointer-events: none;
-}
-.spot:hover::before {
-  opacity: 1;
+@media (hover: hover) and (pointer: fine) {
+  .spot::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    background: radial-gradient(
+      240px circle at var(--kk-mx, 50%) var(--kk-my, 50%),
+      rgba(45, 212, 191, 0.22),
+      transparent 65%
+    );
+    pointer-events: none;
+  }
+  .spot:hover::before {
+    opacity: 1;
+  }
 }
 
-/* لمعة تمر فوق العنصر عند المرور بالمؤشر */
+/* لمعة تمر فوق العنصر عند المرور بالمؤشر.
+   كانت الحركة على ‎inset-inline-start‎ وهي خاصية تخطيط — أي إعادة حساب
+   تخطيط كاملة في كل إطار من 0.75 ثانية. صارت على ‎transform‎ (GPU فقط). */
 .sheen {
   position: relative;
   overflow: hidden;
 }
-.sheen::after {
+@media (hover: hover) and (pointer: fine) {
+  .sheen::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    inset-inline-start: 0;
+    width: 60%;
+    height: 100%;
+    transform: translateX(var(--kk-sheen-from, 240%)) skewX(-18deg);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transition: transform 0.75s cubic-bezier(0.22, 0.8, 0.36, 1);
+    pointer-events: none;
+  }
+  .sheen:hover::after {
+    transform: translateX(var(--kk-sheen-to, -240%)) skewX(-18deg);
+  }
+  [dir="ltr"] .sheen::after {
+    --kk-sheen-from: -240%;
+    --kk-sheen-to: 240%;
+  }
+}
+
+/* نبض ضوئي أخضر (للأزرار المهمة).
+   تحريك ‎box-shadow‎ يعيد رسم العنصر في كل إطار — وهذان الزران (واتساب
+   العائم وزر البيع في الشريط السفلي) ظاهران دائمًا على الهاتف، أي رسم
+   متواصل بلا توقف. استبدلناه بحلقة ‎::after‎ تتحرك بـ transform/opacity
+   فقط، فنفس المنظر بتكلفة شبه معدومة. */
+.glow-pulse {
+  position: relative;
+}
+.glow-pulse::after {
   content: "";
   position: absolute;
-  top: 0;
-  inset-inline-start: -140%;
-  width: 60%;
-  height: 100%;
-  transform: skewX(-18deg);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
-  transition: inset-inline-start 0.75s cubic-bezier(0.22, 0.8, 0.36, 1);
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(37, 211, 102, 0.5);
   pointer-events: none;
+  opacity: 0;
 }
-.sheen:hover::after {
-  inset-inline-start: 140%;
-}
-
-/* نبض ضوئي أخضر (للأزرار المهمة) */
-.glow-pulse {
-  animation: kk-glow-pulse 2.6s ease-in-out infinite;
+@media (prefers-reduced-motion: no-preference) {
+  .glow-pulse::after {
+    animation: kk-glow-pulse 2.6s ease-out infinite;
+  }
 }
 @keyframes kk-glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.45), 0 10px 30px rgba(15, 68, 57, 0.25); }
-  50% { box-shadow: 0 0 0 14px rgba(37, 211, 102, 0), 0 14px 40px rgba(15, 68, 57, 0.35); }
+  0% { opacity: 0.55; transform: scale(1); }
+  70%, 100% { opacity: 0; transform: scale(1.45); }
 }
 
-/* إطار متدرج يدور حول البطاقة */
+/* إطار متدرج يدور حول البطاقة — الدوران يبدأ عند التحويم فقط
+   (كان يدور بلا توقف رغم أن شفافيته صفر) */
 .aura {
   position: relative;
 }
@@ -916,9 +1019,11 @@ html[data-kk-intro="done"] .kk-intro {
   filter: blur(10px);
   opacity: 0;
   transition: opacity 0.4s ease;
+}
+.aura:hover::before {
+  opacity: 0.55;
   animation: kk-aura-spin 6s linear infinite;
 }
-.aura:hover::before { opacity: 0.55; }
 
 @keyframes kk-aura-spin {
   to { transform: rotate(360deg); }
@@ -931,7 +1036,11 @@ html[data-kk-intro="done"] .kk-intro {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: kk-gradient-move 7s linear infinite;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .gradient-text-anim {
+    animation: kk-gradient-move 9s linear infinite;
+  }
 }
 @keyframes kk-gradient-move {
   to { background-position: 300% 50%; }
@@ -1027,7 +1136,11 @@ html[data-kk-intro="done"] .kk-intro {
   .float-slow,
   .float-slower,
   .spin-slow,
-  .glow-pulse,
+  .glow-pulse::after,
+  .gradient-text-anim,
+  .kk-ambient-scrap,
+  .btn-sell::after,
+  .aura:hover::before,
   .stagger > * {
     animation: none !important;
   }
@@ -1058,11 +1171,11 @@ html[data-kk-intro="done"] .kk-intro {
 
 /* ---------- انتقال الصفحات ---------- */
 .kk-page-fade {
-  animation: kk-page-in 0.55s cubic-bezier(0.22, 0.8, 0.36, 1) both;
+  animation: kk-page-in 0.35s cubic-bezier(0.22, 0.8, 0.36, 1) both;
 }
 @keyframes kk-page-in {
-  from { opacity: 0; transform: translateY(14px) scale(0.995); filter: blur(3px); }
-  to { opacity: 1; transform: none; filter: blur(0); }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .kk-page-fade { animation: none; }

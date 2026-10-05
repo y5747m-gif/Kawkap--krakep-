@@ -87,7 +87,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             })}
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.96] p-4 shadow-lift backdrop-blur sm:p-7">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.98] p-4 shadow-lift sm:p-7">
             {children}
           </div>
         </div>

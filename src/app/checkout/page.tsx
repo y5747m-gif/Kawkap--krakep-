@@ -56,7 +56,7 @@ export default async function CheckoutPage() {
                   <div key={item.id} className="flex items-center gap-3.5 p-4">
                     {item.product.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.product.image} alt="" className="h-14 w-16 rounded-xl object-cover" />
+                      <img src={item.product.image} alt="" className="h-14 w-16 rounded-xl object-cover" loading="lazy" decoding="async" />
                     ) : (
                       <span className="h-14 w-16 rounded-xl bg-planet-100" />
                     )}

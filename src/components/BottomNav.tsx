@@ -33,7 +33,7 @@ export default function BottomNav() {
                   href="/sell"
                   aria-label="اعرض شيئًا للبيع"
                   aria-current={pathname?.startsWith("/sell") ? "page" : undefined}
-                  className="btn-sell kk-sell-fab animate-pulse-glow"
+                  className="btn-sell kk-sell-fab"
                 >
                   <Plus size={22} strokeWidth={3} />
                   <span className="text-[10px] font-extrabold leading-none">بيع</span>

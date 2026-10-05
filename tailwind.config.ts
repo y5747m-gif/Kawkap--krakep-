@@ -34,7 +34,15 @@ const config: Config = {
         },
       },
       fontFamily: {
-        cairo: ['"Cairo"', "system-ui", "-apple-system", "Segoe UI", "Tahoma", "sans-serif"],
+        cairo: [
+          '"Cairo Variable"',
+          '"Cairo"',
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Tahoma",
+          "sans-serif",
+        ],
       },
       boxShadow: {
         soft: "0 8px 30px rgba(15, 68, 57, 0.08)",
