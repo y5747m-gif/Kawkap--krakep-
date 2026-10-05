@@ -14,10 +14,28 @@
   --deep: #0f4439;
   --deeper: #04241d;
   --gold: #f59e0b;
+
+  /* ---------- قياسات الهاتف (الشريط العلوي/السفلي والمناطق الآمنة) ---------- */
+  --kk-header-h: 3.5rem; /* ارتفاع الشريط العلوي على الهاتف */
+  --kk-nav-h: 4rem; /* ارتفاع الشريط السفلي على الهاتف */
+  --kk-safe-top: env(safe-area-inset-top, 0px);
+  --kk-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --kk-safe-left: env(safe-area-inset-left, 0px);
+  --kk-safe-right: env(safe-area-inset-right, 0px);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --kk-header-h: 4rem;
+    --kk-nav-h: 0rem;
+  }
 }
 
 html {
   scroll-behavior: smooth;
+  /* يمنع تكبير الخط التلقائي عند تدوير الهاتف */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -27,6 +45,39 @@ body {
     radial-gradient(900px 420px at 8% 4%, rgba(31, 162, 124, 0.08), transparent 55%),
     linear-gradient(180deg, #f1faf6 0%, #ffffff 45%, #f7fdfb 100%);
   min-height: 100vh;
+  min-height: 100dvh;
+  /* لا تمرير أفقي على الهاتف مهما كانت الزخارف */
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+/* لمسة الهاتف: بدون وميض رمادي عند الضغط + استجابة أسرع */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+a,
+button,
+[role="button"],
+label,
+summary,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* العناوين المثبتة لا تغطي المحتوى عند التنقل بالروابط الداخلية */
+[id] {
+  scroll-margin-top: calc(var(--kk-header-h) + var(--kk-safe-top) + 0.75rem);
+}
+
+/* iOS يكبّر الصفحة تلقائيًا عند التركيز على حقل خطه أصغر من 16px */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
 
 ::selection {
@@ -137,6 +188,116 @@ body {
     @apply cursor-pointer appearance-none bg-no-repeat pe-10;
     background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%231fa27c' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
     background-position: left 1rem center;
+  }
+
+  /* ---------- أزرار الأيقونات (مقاس لمس مريح على الهاتف) ---------- */
+  .icon-btn {
+    @apply relative inline-grid h-10 w-10 shrink-0 place-items-center rounded-2xl text-planet-700 transition-all duration-200 active:scale-90 md:h-11 md:w-11;
+  }
+  .icon-btn:hover {
+    @apply bg-planet-50 text-planet-900;
+  }
+  /* شارة العدّاد فوق الأيقونة */
+  .icon-badge {
+    @apply pointer-events-none absolute -top-0.5 -end-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-extrabold leading-none text-white ring-2 ring-white;
+  }
+
+  /* ---------- الشريط العلوي ---------- */
+  .kk-header {
+    @apply sticky top-0 z-40 border-b border-white/60 bg-white/85 backdrop-blur-xl;
+    padding-top: var(--kk-safe-top);
+    padding-left: var(--kk-safe-left);
+    padding-right: var(--kk-safe-right);
+    transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  }
+  .kk-header.is-scrolled {
+    @apply bg-white/95 shadow-soft;
+  }
+  .kk-header-row {
+    @apply mx-auto flex w-full max-w-7xl items-center gap-1 px-2.5 sm:gap-2 sm:px-4 md:gap-3 md:px-5;
+    height: var(--kk-header-h);
+  }
+
+  /* ---------- الشريط السفلي (الهاتف) ---------- */
+  .kk-bottom-nav {
+    @apply fixed inset-x-0 bottom-0 z-40 border-t border-planet-100 bg-white/95 backdrop-blur-xl md:hidden;
+    padding-bottom: var(--kk-safe-bottom);
+    padding-left: var(--kk-safe-left);
+    padding-right: var(--kk-safe-right);
+    box-shadow: 0 -8px 28px rgba(15, 68, 57, 0.09);
+  }
+  .kk-bottom-row {
+    @apply mx-auto grid max-w-md grid-cols-5 items-center gap-0.5 px-1.5;
+    height: var(--kk-nav-h);
+  }
+  .kk-nav-item {
+    @apply flex h-full flex-col items-center justify-center gap-1 rounded-2xl text-[11px] font-bold leading-none transition-colors;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .kk-nav-icon {
+    @apply flex h-7 w-11 items-center justify-center rounded-full transition-all duration-300;
+  }
+  .kk-nav-item[data-active="true"] {
+    @apply text-planet-700;
+  }
+  .kk-nav-item[data-active="true"] .kk-nav-icon {
+    @apply bg-planet-100 text-planet-700;
+  }
+  .kk-nav-item[data-active="false"] {
+    @apply text-planet-900/55;
+  }
+  .kk-nav-item:active .kk-nav-icon {
+    transform: scale(0.9);
+  }
+  .kk-nav-label {
+    @apply block w-full truncate px-0.5 text-center;
+  }
+  /* زر البيع العائم في منتصف الشريط السفلي */
+  .kk-sell-fab {
+    @apply absolute left-1/2 flex h-[3.4rem] w-[3.4rem] -translate-x-1/2 flex-col items-center justify-center gap-0.5 rounded-full;
+    top: -1.25rem;
+    /* إطار أبيض لا يتعارض مع حركة التوهج (التي تستخدم box-shadow) */
+    outline: 4px solid rgba(255, 255, 255, 0.92);
+    outline-offset: 0;
+  }
+
+  /* ---------- حاوية المحتوى: تترك مساحة للشريط السفلي ---------- */
+  .kk-main {
+    @apply mx-auto w-full max-w-7xl pt-4;
+    padding-bottom: 2rem;
+    padding-left: max(0.75rem, var(--kk-safe-left));
+    padding-right: max(0.75rem, var(--kk-safe-right));
+  }
+  @media (min-width: 640px) {
+    .kk-main {
+      padding-left: max(1.25rem, var(--kk-safe-left));
+      padding-right: max(1.25rem, var(--kk-safe-right));
+    }
+  }
+  @media (min-width: 768px) {
+    .kk-main {
+      padding-bottom: 4rem;
+    }
+  }
+
+  /* ---------- التذييل: مساحة للشريط السفلي حتى لا يغطي آخر سطر ---------- */
+  .kk-footer {
+    padding-bottom: calc(var(--kk-nav-h) + var(--kk-safe-bottom));
+    padding-left: var(--kk-safe-left);
+    padding-right: var(--kk-safe-right);
+  }
+
+  /* ---------- لوحة الإدارة: هوامش آمنة على الهاتف ---------- */
+  .kk-admin-shell {
+    padding-left: max(0.75rem, var(--kk-safe-left));
+    padding-right: max(0.75rem, var(--kk-safe-right));
+    padding-bottom: calc(var(--kk-safe-bottom) + 1rem);
+  }
+  @media (min-width: 640px) {
+    .kk-admin-shell {
+      padding-left: max(1.25rem, var(--kk-safe-left));
+      padding-right: max(1.25rem, var(--kk-safe-right));
+    }
   }
 
   /* ---------- عناصر أخرى ---------- */
@@ -493,10 +654,14 @@ html[data-kk-intro="done"] .kk-intro {
   bottom: max(1.25rem, env(safe-area-inset-bottom));
   inset-inline-end: 1.25rem;
   z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem; /* مساحة لمس مريحة على الهاتف */
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.1);
-  padding: 0.5rem 1.1rem;
+  padding: 0.5rem 1.25rem;
   font-size: 0.75rem;
   font-weight: 800;
   color: rgba(255, 255, 255, 0.85);
@@ -797,26 +962,30 @@ html[data-kk-intro="done"] .kk-intro {
 .stagger > *:nth-child(7) { animation-delay: 0.28s; }
 .stagger > *:nth-child(8) { animation-delay: 0.32s; }
 
-/* زر واتساب العائم */
+/* زر واتساب العائم — يبقى دائمًا فوق الشريط السفلي وبعيدًا عن حافة الشاشة */
 .kk-wa-fab {
   position: fixed;
   z-index: 45;
-  inset-inline-end: 1rem;
-  bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+  inset-inline-end: max(0.75rem, var(--kk-safe-right));
+  bottom: calc(var(--kk-nav-h) + var(--kk-safe-bottom) + 0.85rem);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  height: 3rem;
+  width: 3rem;
   border-radius: 999px;
-  padding: 0.85rem 1rem;
   font-size: 0.8rem;
   font-weight: 800;
   color: #fff;
   background: linear-gradient(135deg, #25d366, #128c7e);
-  box-shadow: 0 12px 34px rgba(18, 140, 126, 0.45);
+  box-shadow: 0 10px 28px rgba(18, 140, 126, 0.45);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
+.kk-wa-fab:active {
+  transform: scale(0.92);
+}
 .kk-wa-fab:hover {
-  transform: translateY(-3px) scale(1.04);
   box-shadow: 0 18px 44px rgba(18, 140, 126, 0.6);
 }
 .kk-wa-fab .kk-wa-label {
@@ -824,7 +993,13 @@ html[data-kk-intro="done"] .kk-intro {
 }
 @media (min-width: 768px) {
   .kk-wa-fab {
+    width: auto;
+    padding: 0.85rem 1.1rem;
     bottom: 1.5rem;
+    inset-inline-end: 1.5rem;
+  }
+  .kk-wa-fab:hover {
+    transform: translateY(-3px) scale(1.04);
   }
   .kk-wa-fab .kk-wa-label {
     display: inline;

@@ -58,9 +58,9 @@ export default function SearchBar({ autoFocus = false }: { autoFocus?: boolean }
     <div ref={boxRef} className="relative w-full">
       <form
         onSubmit={submit}
-        className="flex items-center gap-2.5 rounded-full border border-white/60 bg-white/90 py-2 pe-2 ps-5 shadow-lift backdrop-blur-xl transition-shadow focus-within:shadow-glow"
+        className="flex items-center gap-2 rounded-full border border-white/60 bg-white/90 py-2 pe-2 ps-4 shadow-lift backdrop-blur-xl transition-shadow focus-within:shadow-glow sm:gap-2.5 sm:ps-5"
       >
-        <Search size={20} className="shrink-0 text-planet-500" />
+        <Search size={20} className="hidden shrink-0 text-planet-500 sm:block" />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -71,11 +71,11 @@ export default function SearchBar({ autoFocus = false }: { autoFocus?: boolean }
           aria-label="البحث في الكراكيب"
         />
         {q && (
-          <button type="button" onClick={() => setQ("")} className="btn-ghost rounded-full p-1.5" aria-label="مسح">
+          <button type="button" onClick={() => setQ("")} className="btn-ghost grid h-9 w-9 shrink-0 place-items-center rounded-full" aria-label="مسح">
             <X size={16} />
           </button>
         )}
-        <button type="submit" className="btn-primary shrink-0 rounded-full px-5 py-2.5 text-sm">
+        <button type="submit" className="btn-primary h-11 shrink-0 rounded-full px-5 text-sm">
           ابحث
         </button>
       </form>

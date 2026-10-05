@@ -33,6 +33,10 @@ export const viewport: Viewport = {
   themeColor: "#0f4439",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  // يمتد الموقع تحت «النوتش» ومؤشر الهاتف، والمناطق الآمنة تُعالَج في CSS
+  viewportFit: "cover",
 };
 
 /**
@@ -60,7 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <AmbientLights />
         <PointerLight />
         <Header user={user} cartCount={cart} />
-        <main className="mx-auto w-full max-w-7xl px-3 pb-28 pt-4 sm:px-5 md:pb-16">
+        <main className="kk-main">
           <PageFade>{children}</PageFade>
         </main>
         <Footer />

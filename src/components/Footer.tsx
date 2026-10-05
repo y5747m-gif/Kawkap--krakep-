@@ -6,12 +6,12 @@ import { CATEGORIES } from "@/lib/constants";
 
 export default function Footer() {
   return (
-    <footer className="relative mt-16 overflow-hidden bg-planet-950 text-white">
+    <footer className="kk-footer relative mt-16 overflow-hidden bg-planet-950 text-white">
       {/* زخارف ضوئية */}
       <div className="pointer-events-none absolute -top-24 start-1/4 h-64 w-64 rounded-full bg-tealx-500/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-20 end-10 h-56 w-56 rounded-full bg-gold-500/10 blur-3xl" />
 
-      <div className="relative mx-auto grid w-full max-w-7xl gap-10 px-5 py-14 md:grid-cols-4">
+      <div className="relative mx-auto grid w-full max-w-7xl gap-9 px-4 py-10 sm:px-5 sm:py-14 md:grid-cols-4">
         <div className="md:col-span-2">
           <div className="float-slower [&_span]:!text-white [&_.text-planet-500]:!text-tealx-400">
             <Logo size={46} />
@@ -52,7 +52,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="relative flex flex-col items-center justify-center gap-2 border-t border-white/10 py-5 text-center text-xs text-white/50 sm:flex-row sm:gap-4">
+      <div className="relative flex flex-col items-center justify-center gap-2 border-t border-white/10 px-4 py-5 text-center text-[11px] leading-6 text-white/50 sm:flex-row sm:gap-4 sm:text-xs">
         <span>كوكب كراكيب © {new Date().getFullYear()} — حوّل الكراكيب إلى قيمة، وحماية كوكبنا مسؤوليتنا جميعًا</span>
         <ReplayIntroButton />
       </div>

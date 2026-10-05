@@ -111,13 +111,13 @@ export default function CartView({ initialItems }: { initialItems: CartItemData[
                       <div className="mt-2.5 flex flex-wrap items-center gap-3">
                         {perUnit ? (
                           <div className="flex items-center gap-1" dir="ltr">
-                            <button onClick={() => updateQty(item.id, item.quantity - 1)} className="btn-outline h-7 w-7 rounded-lg p-0" aria-label="تقليل" disabled={busy === item.id}>
+                            <button onClick={() => updateQty(item.id, item.quantity - 1)} className="btn-outline h-9 w-9 rounded-xl p-0 sm:h-8 sm:w-8" aria-label="تقليل" disabled={busy === item.id}>
                               <Minus size={13} />
                             </button>
                             <span className="w-14 rounded-lg border border-planet-200 bg-white py-1 text-center text-xs font-extrabold">
                               {busy === item.id ? <Loader2 size={12} className="mx-auto animate-spin" /> : item.quantity}
                             </span>
-                            <button onClick={() => updateQty(item.id, item.quantity + 1)} className="btn-outline h-7 w-7 rounded-lg p-0" aria-label="زيادة" disabled={busy === item.id}>
+                            <button onClick={() => updateQty(item.id, item.quantity + 1)} className="btn-outline h-9 w-9 rounded-xl p-0 sm:h-8 sm:w-8" aria-label="زيادة" disabled={busy === item.id}>
                               <Plus size={13} />
                             </button>
                           </div>
@@ -140,7 +140,7 @@ export default function CartView({ initialItems }: { initialItems: CartItemData[
 
       {/* الملخص */}
       <div className="lg:sticky lg:top-24 lg:self-start">
-        <div className="glass space-y-4 rounded-3xl p-6">
+        <div className="glass space-y-4 rounded-3xl p-4 sm:p-6">
           <h2 className="text-base font-extrabold text-planet-950">ملخص الطلب</h2>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between text-planet-600">

@@ -88,11 +88,11 @@ export default function MyProductCard({ product }: { product: ProductCardData })
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link href={`/sell/${product.id}`} className="btn-outline px-3 py-1.5 text-xs">
+            <Link href={`/sell/${product.id}`} className="btn-outline px-3 py-2.5 text-xs sm:py-1.5">
               <PenLine size={12} /> تعديل
             </Link>
             {(product.status === "ACTIVE" || product.status === "PAUSED") && (
-              <button onClick={togglePause} disabled={busy} className="btn-outline px-3 py-1.5 text-xs">
+              <button onClick={togglePause} disabled={busy} className="btn-outline px-3 py-2.5 text-xs sm:py-1.5">
                 {busy ? <Loader2 size={12} className="animate-spin" /> : product.status === "ACTIVE" ? <Pause size={12} /> : <Play size={12} />}
                 {product.status === "ACTIVE" ? "إيقاف" : "تنشيط"}
               </button>

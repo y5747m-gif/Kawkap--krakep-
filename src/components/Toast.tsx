@@ -46,7 +46,7 @@ export default function ToastHost() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-20 z-[100] flex flex-col items-center gap-2 px-4">
+    <div className="pointer-events-none fixed inset-x-0 top-[calc(var(--kk-header-h)_+_var(--kk-safe-top)_+_0.75rem)] z-[100] flex flex-col items-center gap-2 px-4">
       {toasts.map((t) => {
         const Icon = ICONS[t.type];
         return (

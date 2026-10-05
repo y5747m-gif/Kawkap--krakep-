@@ -139,7 +139,7 @@ export default async function ProductPage({
 
         {/* التفاصيل */}
         <div className="space-y-5">
-          <div className="glass rounded-3xl p-6">
+          <div className="glass rounded-3xl p-4 sm:p-6">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <Link
                 href={`/categories/${product.categorySlug}`}
@@ -265,7 +265,7 @@ export default async function ProductPage({
           </div>
 
           {/* الوصف */}
-          <div className="glass rounded-3xl p-6">
+          <div className="glass rounded-3xl p-4 sm:p-6">
             <h2 className="mb-3 flex items-center gap-2 text-base font-extrabold text-planet-950">
               <MessageSquareQuote size={18} className="text-planet-500" /> وصف المنتج
             </h2>

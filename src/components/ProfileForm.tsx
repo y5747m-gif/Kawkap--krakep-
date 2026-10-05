@@ -78,7 +78,7 @@ export function ProfileEditForm({
   }
 
   return (
-    <form onSubmit={save} className="glass space-y-5 rounded-3xl p-6">
+    <form onSubmit={save} className="glass space-y-5 rounded-3xl p-4 sm:p-6">
       {/* الصورة الشخصية */}
       <div className="flex items-center gap-4">
         {form.avatarUrl ? (
@@ -177,7 +177,7 @@ export function PasswordChangeForm() {
   }
 
   return (
-    <form onSubmit={save} className="glass space-y-4 rounded-3xl p-6">
+    <form onSubmit={save} className="glass space-y-4 rounded-3xl p-4 sm:p-6">
       <h3 className="flex items-center gap-2 text-sm font-extrabold text-planet-900">
         <ShieldCheck size={17} className="text-planet-500" /> تغيير كلمة المرور
       </h3>

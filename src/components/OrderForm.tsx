@@ -179,7 +179,7 @@ export default function OrderForm({
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, Math.round((q - 1) * 100) / 100))}
-                  className="btn-outline h-8 w-8 rounded-xl p-0 text-lg leading-none"
+                  className="btn-outline h-10 w-10 rounded-xl p-0 text-lg leading-none sm:h-9 sm:w-9"
                   aria-label="تقليل"
                 >
                   −
@@ -196,7 +196,7 @@ export default function OrderForm({
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.min(product.quantity, Math.round((q + 1) * 100) / 100))}
-                  className="btn-outline h-8 w-8 rounded-xl p-0 text-lg leading-none"
+                  className="btn-outline h-10 w-10 rounded-xl p-0 text-lg leading-none sm:h-9 sm:w-9"
                   aria-label="زيادة"
                 >
                   +

@@ -37,7 +37,7 @@ function LoginForm() {
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="glass rounded-3xl p-8">
+      <div className="glass rounded-3xl p-5 sm:p-8">
         <div className="mb-7 text-center">
           <div className="mb-4 flex justify-center"><Logo size={54} withText={false} /></div>
           <h1 className="text-xl font-black text-planet-950">أهلًا بعودتك</h1>

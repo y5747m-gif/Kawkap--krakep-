@@ -43,7 +43,7 @@ export default async function OrderPage({
     <div className="mx-auto max-w-3xl space-y-6">
       {/* ============ حالة النجاح ============ */}
       {isNew && (
-        <div className="fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-planet-600 via-planet-700 to-planet-900 p-8 text-center text-white shadow-lift">
+        <div className="fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-planet-600 via-planet-700 to-planet-900 p-5 text-center text-white shadow-lift sm:p-8">
           <div className="pointer-events-none absolute -top-16 start-1/4 h-48 w-48 rounded-full bg-tealx-400/30 blur-3xl" />
           <span className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/15 backdrop-blur">
             <CircleCheckBig size={42} className="text-tealx-300" />
@@ -87,7 +87,7 @@ export default async function OrderPage({
       </div>
 
       {/* ============ الخط الزمني ============ */}
-      <div className="glass rounded-3xl p-6">
+      <div className="glass rounded-3xl p-4 sm:p-6">
         <h2 className="mb-5 text-base font-extrabold text-planet-950">مسار الطلب</h2>
         {isCancelled ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-center text-sm font-extrabold text-rose-700">
@@ -215,7 +215,7 @@ export default async function OrderPage({
       )}
 
       {order.review && (
-        <div className="glass rounded-3xl p-6">
+        <div className="glass rounded-3xl p-4 sm:p-6">
           <h2 className="mb-3 text-base font-extrabold text-planet-950">تقييمك للطلب</h2>
           <RatingStars rating={order.review.rating} size={17} showValue={false} />
           {order.review.comment && (
