@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getCurrentUser, getGuestToken, isAdmin, canManageListing } from "@/lib/auth";
+import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/http";
 import {
   getProductRow, updateProduct, deleteProduct, getProductDetail,
@@ -24,25 +24,20 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 }
 
 /**
- * PATCH — تعديل الإعلان:
- *  - البائع: تعديل بياناته (اسم، وصف، سعر، مواصفات، صور، إيقاف/تشغيل)
- *  - الضيف الذي نشر بدون حساب: من نفس المتصفح (رمز الزائر)
- *  - الإدارة: قبول / رفض / إخفاء / تمييز / إيقاف
+ * PATCH — تعديل الإعلان وإدارة حالته للإدارة فقط.
+ * طلب العميل يصبح سجلًا ثابتًا للعرض بعد الإرسال حتى تظل البيانات مطابقة
+ * للنسخة التي استلمتها الإدارة عبر النظام وواتساب.
  */
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   const user = await getCurrentUser();
-  const guestToken = await getGuestToken();
 
   const product = getProductRow(id);
   if (!product) return jsonError("المنتج غير موجود", 404);
 
   const admin = isAdmin(user);
-  const isGuestOwner =
-    !!guestToken && !!product.guestToken && product.guestToken === guestToken;
-  const isOwner = (!!user && product.sellerId === user.id && !isGuestSellerId(product.sellerId)) || isGuestOwner;
-  if (!canManageListing(product, user, guestToken)) {
-    return jsonError("لا تملك صلاحية تعديل هذا الإعلان", 403);
+  if (!admin) {
+    return jsonError("طلب البيع محفوظ للعرض فقط ولا يمكن تعديله بعد الإرسال", 403);
   }
 
   try {
@@ -57,8 +52,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       if (typeof body.featured === "boolean") changes.featured = body.featured;
     }
 
-    // ---- صلاحيات البائع (والإدارة أيضًا) ----
-    if (isOwner || admin) {
+    // ---- بيانات الإعلان — لا يصل إلى هذا المسار إلا المالك/الإدارة ----
+    if (admin) {
       if (body.title !== undefined) {
         const title = sanitizeText(body.title, 120);
         if (title.length < 3) return jsonError("اسم المنتج قصير جدًا");
@@ -116,7 +111,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
           if (body[key] !== undefined) target[key] = parsedSpecs[key];
         }
       }
-      // إيقاف/تشغيل خاص بالبائع
+      // دعم أمر الإيقاف القديم داخل لوحة الإدارة فقط
       if (body.pause === true) changes.status = "PAUSED";
       if (body.pause === false) changes.status = "ACTIVE";
       if (Array.isArray(body.images)) {
@@ -149,18 +144,18 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     }
 
     // ---- إشعار البائع بقرارات الإدارة (الضيف بلا حساب فلا إشعارات له) ----
-    if (admin && !isOwner && !isGuestSellerId(product.sellerId)) {
+    if (admin && product.sellerId !== user?.id && !isGuestSellerId(product.sellerId)) {
       if (changes.status === "ACTIVE") {
         notify({
           userId: product.sellerId, type: "LISTING_APPROVED",
           title: "تم قبول إعلانك", body: `إعلانك «${product.title}» منشور الآن`,
-          link: `/products/${product.id}`,
+          link: `/sales?item=${product.id}#sale-${product.id}`,
         });
       } else if (changes.status === "REJECTED") {
         notify({
           userId: product.sellerId, type: "LISTING_REJECTED",
-          title: "تم رفض إعلانك", body: `إعلانك «${product.title}» لم يستوفِ شروط النشر — يمكنك تعديله وإعادة النشر`,
-          link: "/account?tab=selling",
+          title: "تم رفض إعلانك", body: `إعلانك «${product.title}» لم يستوفِ شروط النشر — راجع حالة الطلب من سجل مبيعاتك`,
+          link: `/sales?item=${product.id}#sale-${product.id}`,
         });
       }
     }
@@ -172,17 +167,16 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   }
 }
 
-/** DELETE — حذف الإعلان (البائع أو صاحب الإعلان الضيف أو الإدارة) */
-export async function DELETE(req: NextRequest, { params }: Ctx) {
+/** DELETE — حذف الإعلان متاح للإدارة فقط؛ سجل العميل للعرض فقط. */
+export async function DELETE(_req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   const user = await getCurrentUser();
-  const guestToken = await getGuestToken();
 
   const product = getProductRow(id);
   if (!product) return jsonError("المنتج غير موجود", 404);
 
-  if (!canManageListing(product, user, guestToken)) {
-    return jsonError("لا تملك صلاحية حذف هذا الإعلان", 403);
+  if (!isAdmin(user)) {
+    return jsonError("طلب البيع محفوظ للعرض فقط ولا يمكن حذفه بعد الإرسال", 403);
   }
 
   deleteProduct(product.id);

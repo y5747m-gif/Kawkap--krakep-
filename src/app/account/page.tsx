@@ -25,7 +25,7 @@ export const metadata = { title: "حسابي" };
 const TABS = [
   { key: "overview", label: "نظرة عامة", icon: UserIcon },
   { key: "profile", label: "بياناتي", icon: UserIcon },
-  { key: "selling", label: "أنا أبيع", icon: Store },
+  { key: "selling", label: "طلبات البيع", icon: Store },
   { key: "orders", label: "طلباتي", icon: PackageCheck },
   { key: "favorites", label: "المفضلة", icon: Heart },
   { key: "chats", label: "المحادثات", icon: MessagesSquare },
@@ -150,8 +150,8 @@ export default async function AccountPage({
                 </div>
               ))}
             </div>
-            <Link href="/account?tab=selling" className="btn-primary mt-4 w-full py-3 text-sm">
-              إدارة إعلاناتي <ChevronLeft size={15} />
+            <Link href="/sales" className="btn-primary mt-4 w-full py-3 text-sm">
+              عرض تفاصيل طلبات البيع <ChevronLeft size={15} />
             </Link>
           </div>
 
@@ -210,7 +210,7 @@ export default async function AccountPage({
         />
       )}
 
-      {/* ================= أنا أبيع ================= */}
+      {/* ================= طلبات البيع — عرض فقط ================= */}
       {tab === "selling" && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -218,8 +218,8 @@ export default async function AccountPage({
               {formatNumber(stats.total)} إعلان — {formatNumber(stats.active)} نشط · {formatNumber(stats.paused)} موقوف · {formatNumber(stats.pending)} بانتظار المراجعة
             </p>
             <div className="flex gap-2">
-              <Link href="/seller" className="btn-outline px-4 py-2.5 text-xs">لوحة البائع الكاملة</Link>
-              <Link href="/sell" className="btn-sell px-4 py-2.5 text-xs">+ إعلان جديد</Link>
+              <Link href="/sales" className="btn-outline px-4 py-2.5 text-xs">عرض كل تفاصيل البيع</Link>
+              <Link href="/sell" className="btn-sell px-4 py-2.5 text-xs">+ طلب بيع جديد</Link>
             </div>
           </div>
           {products.length ? (

@@ -35,7 +35,7 @@ export default async function OrdersPage() {
           <p className="mt-1 text-sm text-planet-600">كل طلباتك كمشترٍ وحالتها الحالية</p>
         </div>
         <Link href="/seller" className="btn-outline px-4 py-2.5 text-xs">
-          <ShoppingBag size={14} /> الطلبات على منتجاتي (لوحة البائع)
+          <ShoppingBag size={14} /> الطلبات على منتجاتي (متابعة المبيعات)
         </Link>
       </div>
 

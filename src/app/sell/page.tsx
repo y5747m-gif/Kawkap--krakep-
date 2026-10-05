@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogIn, ShieldCheck, Store } from "lucide-react";
+import { ClipboardList, LogIn, ShieldCheck, Store } from "lucide-react";
 import SellWizard from "@/components/SellWizard";
 import ProductCard from "@/components/ProductCard";
 import SectionHeader from "@/components/SectionHeader";
@@ -29,6 +29,9 @@ export default async function SellPage() {
         <p className="mt-1.5 text-sm text-planet-600">
           بدون تسجيل ولا حساب — اكتب مواصفات ما تبيعه كاملة ويظهر إعلانك لآلاف المشترين
         </p>
+        <Link href="/sales" className="chip mt-3 border-planet-200 bg-white px-4 py-2 text-xs text-planet-700 shadow-sm">
+          <ClipboardList size={14} /> عرض طلبات البيع السابقة
+        </Link>
       </div>
 
       {!user && (
@@ -65,8 +68,9 @@ export default async function SellPage() {
       {myGuestListings.length > 0 && (
         <section className="mx-auto max-w-3xl pt-4">
           <SectionHeader
-            title="إعلاناتك من هذا الجهاز"
-            subtitle="نشرتها بدون حساب — يمكنك فتحها وتعديلها من نفس المتصفح"
+            title="طلبات البيع من هذا الجهاز"
+            subtitle="محفوظة للعرض والمتابعة فقط — افتح سجل البيع لرؤية كل التفاصيل"
+            href="/sales"
           />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {myGuestListings.slice(0, 6).map((p) => (

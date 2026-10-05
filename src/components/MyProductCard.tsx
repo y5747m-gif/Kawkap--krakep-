@@ -1,59 +1,15 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, Trash2, Pause, Play, PenLine, Loader2, PackageSearch } from "lucide-react";
+import { Eye, FileText, PackageSearch } from "lucide-react";
 import StatusBadge from "./StatusBadge";
-import { toast } from "./Toast";
 import { formatQuantity, formatUnitPrice, formatNumber, timeAgo } from "@/lib/format";
 import type { ProductCardData } from "@/lib/types";
 
-/** كرت إعلاني في «أنا أبيع» — تعديل، إيقاف/تشغيل، حذف */
+/** كرت طلب بيع للعميل — عرض فقط، بلا تعديل أو إيقاف أو حذف. */
 export default function MyProductCard({ product }: { product: ProductCardData }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  async function togglePause() {
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/products/${product.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pause: product.status === "ACTIVE" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      toast(product.status === "ACTIVE" ? "تم إيقاف الإعلان" : "تم تنشيط الإعلان", "success");
-      router.refresh();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "حدث خطأ", "error");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function remove() {
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      toast("تم حذف الإعلان", "success");
-      router.refresh();
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "حدث خطأ", "error");
-    } finally {
-      setBusy(false);
-      setConfirmDelete(false);
-    }
-  }
-
   return (
     <div className="glass overflow-hidden rounded-3xl">
       <div className="flex gap-4 p-4">
-        <Link href={`/products/${product.id}`} className="relative shrink-0">
+        <Link href={`/sales?item=${product.id}#sale-${product.id}`} className="relative shrink-0">
           {product.image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={product.image} alt={product.title} className="h-24 w-28 rounded-2xl object-cover" loading="lazy" decoding="async" />
@@ -71,7 +27,10 @@ export default function MyProductCard({ product }: { product: ProductCardData })
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/products/${product.id}`} className="line-clamp-1 text-sm font-extrabold text-planet-950 hover:text-planet-600">
+            <Link
+              href={`/sales?item=${product.id}#sale-${product.id}`}
+              className="line-clamp-1 text-sm font-extrabold text-planet-950 hover:text-planet-600"
+            >
               {product.title}
             </Link>
             <StatusBadge status={product.status} type="product" />
@@ -87,33 +46,16 @@ export default function MyProductCard({ product }: { product: ProductCardData })
             <span>{timeAgo(product.createdAt)}</span>
           </p>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link href={`/sell/${product.id}`} className="btn-outline px-3 py-2.5 text-xs sm:py-1.5">
-              <PenLine size={12} /> تعديل
+          <div className="mt-3">
+            <Link href={`/sales?item=${product.id}#sale-${product.id}`} className="btn-outline px-3 py-2.5 text-xs sm:py-1.5">
+              <FileText size={12} /> عرض تفاصيل البيع
             </Link>
-            {(product.status === "ACTIVE" || product.status === "PAUSED") && (
-              <button onClick={togglePause} disabled={busy} className="btn-outline px-3 py-2.5 text-xs sm:py-1.5">
-                {busy ? <Loader2 size={12} className="animate-spin" /> : product.status === "ACTIVE" ? <Pause size={12} /> : <Play size={12} />}
-                {product.status === "ACTIVE" ? "إيقاف" : "تنشيط"}
-              </button>
-            )}
-            {confirmDelete ? (
-              <span className="flex items-center gap-1.5">
-                <button onClick={remove} disabled={busy} className="chip border-rose-300 bg-rose-500 text-white">
-                  {busy ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} تأكيد الحذف
-                </button>
-                <button onClick={() => setConfirmDelete(false)} className="chip border-planet-200 bg-white text-planet-600">
-                  إلغاء
-                </button>
-              </span>
-            ) : (
-              <button onClick={() => setConfirmDelete(true)} className="chip border-rose-200 bg-rose-50 text-rose-600">
-                <Trash2 size={12} /> حذف
-              </button>
-            )}
           </div>
         </div>
       </div>
+      <p className="border-t border-planet-100 bg-planet-50/55 px-4 py-2.5 text-[10px] font-bold text-planet-500">
+        تفاصيل طلب البيع محفوظة للعرض فقط، وتحدّث الإدارة حالته.
+      </p>
     </div>
   );
 }

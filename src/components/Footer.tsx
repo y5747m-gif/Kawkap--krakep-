@@ -36,7 +36,8 @@ export default function Footer() {
             <li><Link href="/categories" className="hover:text-white">التصنيفات</Link></li>
             <li><Link href="/map" className="hover:text-white">خريطة الكراكيب القريبة</Link></li>
             <li><Link href="/sell" className="hover:text-white">اعرض شيئًا للبيع</Link></li>
-            <li><Link href="/orders" className="hover:text-white">طلباتي</Link></li>
+            <li><Link href="/sales" className="hover:text-white">طلبات البيع الخاصة بي</Link></li>
+            <li><Link href="/orders" className="hover:text-white">طلبات الشراء</Link></li>
           </ul>
         </div>
 

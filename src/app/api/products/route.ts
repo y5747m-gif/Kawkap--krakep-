@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
  * POST /api/products — نشر إعلان جديد (العملاء هم البائعون)
  *
  * تسجيل الدخول *اختياري*: من يملك حسابًا يُنسب الإعلان لحسابه،
- * ومن لا يملك ينشر كـ«ضيف» ويُحفظ رمز متصفحه ليعدّل إعلانه لاحقًا.
+ * ومن لا يملك ينشر كـ«ضيف» ويُحفظ رمز متصفحه لعرض سجل طلباته لاحقًا.
  */
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
           status === "ACTIVE"
             ? `إعلانك «${title}» منشور الآن ويمكن للجميع رؤيته`
             : `إعلانك «${title}» في انتظار موافقة الإدارة وسيظهر بعد القبول`,
-        link: status === "ACTIVE" ? `/products/${product.id}` : "/account?tab=selling",
+        link: `/sales?item=${product.id}#sale-${product.id}`,
       });
     }
 

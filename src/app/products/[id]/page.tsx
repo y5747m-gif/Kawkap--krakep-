@@ -221,8 +221,8 @@ export default async function ProductPage({
                 <Info size={13} /> كود الإعلان: {product.code}
               </span>
               {isOwner && (
-                <Link href={`/sell/${product.id}`} className="chip border-planet-300 bg-planet-50 text-planet-700">
-                  تعديل الإعلان
+                <Link href={`/sales?item=${product.id}#sale-${product.id}`} className="chip border-planet-300 bg-planet-50 text-planet-700">
+                  تفاصيل طلب البيع
                 </Link>
               )}
             </div>
@@ -238,7 +238,7 @@ export default async function ProductPage({
               />
             ) : (
               <div className="rounded-2xl border border-planet-100 bg-planet-50/70 px-5 py-4 text-center text-sm font-bold text-planet-700">
-                {isOwner ? "هذا إعلانك — يمكنك تعديله أو إيقافه من لوحة البائع" : "هذا الإعلان غير متاح للطلب حاليًا"}
+                {isOwner ? "هذا عرضك — تفاصيل طلب البيع محفوظة للعرض فقط" : "هذا الإعلان غير متاح للطلب حاليًا"}
               </div>
             )}
 

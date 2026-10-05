@@ -221,8 +221,8 @@ export default function Header({ user, cartCount: initialCart }: { user: Current
                       <Link href="/account" className="flex items-center gap-2.5 rounded-xl px-3 py-3 font-bold text-planet-800 hover:bg-planet-50">
                         <UserIcon size={17} /> حسابي
                       </Link>
-                      <Link href="/seller" className="flex items-center gap-2.5 rounded-xl px-3 py-3 font-bold text-planet-800 hover:bg-planet-50">
-                        <Store size={17} /> لوحة البائع
+                      <Link href="/sales" className="flex items-center gap-2.5 rounded-xl px-3 py-3 font-bold text-planet-800 hover:bg-planet-50">
+                        <Store size={17} /> طلبات البيع الخاصة بي
                       </Link>
                       <Link href="/orders" className="flex items-center gap-2.5 rounded-xl px-3 py-3 font-bold text-planet-800 hover:bg-planet-50">
                         <PackageCheck size={17} /> طلباتي
@@ -284,8 +284,8 @@ export default function Header({ user, cartCount: initialCart }: { user: Current
               <Link href="/orders" className="flex min-h-[3rem] items-center gap-2.5 rounded-2xl bg-planet-50 px-3.5 text-sm font-bold text-planet-800">
                 <PackageCheck size={18} className="shrink-0" /> <span className="truncate">طلباتي</span>
               </Link>
-              <Link href="/seller" className="flex min-h-[3rem] items-center gap-2.5 rounded-2xl bg-planet-50 px-3.5 text-sm font-bold text-planet-800">
-                <Store size={18} className="shrink-0" /> <span className="truncate">لوحة البائع</span>
+              <Link href="/sales" className="flex min-h-[3rem] items-center gap-2.5 rounded-2xl bg-planet-50 px-3.5 text-sm font-bold text-planet-800">
+                <Store size={18} className="shrink-0" /> <span className="truncate">طلبات البيع</span>
               </Link>
             </div>
 
