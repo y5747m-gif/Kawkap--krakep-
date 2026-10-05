@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getCurrentUser, isAdmin } from "@/lib/auth";
+import { getCurrentUser, getGuestToken, isAdmin, canManageListing } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/http";
 import {
   getProductRow, updateProduct, deleteProduct, getProductDetail,
@@ -7,7 +7,9 @@ import {
 import { notify } from "@/lib/models/misc";
 import { all } from "@/lib/db";
 import { sanitizeText, isValidPrice, isValidQuantity } from "@/lib/validate";
+import { parseSpecsPayload } from "@/lib/specs";
 import { PRICING_TYPE_MAP, CONDITION_MAP, MAX_PRODUCT_IMAGES } from "@/lib/constants";
+import { isGuestSellerId } from "@/lib/models/users";
 import type { PricingType, ProductCondition, ProductStatus } from "@/lib/types";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -23,20 +25,25 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 
 /**
  * PATCH — تعديل الإعلان:
- *  - البائع: تعديل بياناته (اسم، وصف، سعر، صور، إيقاف/تشغيل)
+ *  - البائع: تعديل بياناته (اسم، وصف، سعر، مواصفات، صور، إيقاف/تشغيل)
+ *  - الضيف الذي نشر بدون حساب: من نفس المتصفح (رمز الزائر)
  *  - الإدارة: قبول / رفض / إخفاء / تمييز / إيقاف
  */
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   const user = await getCurrentUser();
-  if (!user) return jsonError("سجل الدخول أولًا", 401);
+  const guestToken = await getGuestToken();
 
   const product = getProductRow(id);
   if (!product) return jsonError("المنتج غير موجود", 404);
 
-  const isOwner = product.sellerId === user.id;
   const admin = isAdmin(user);
-  if (!isOwner && !admin) return jsonError("لا تملك صلاحية تعديل هذا الإعلان", 403);
+  const isGuestOwner =
+    !!guestToken && !!product.guestToken && product.guestToken === guestToken;
+  const isOwner = (!!user && product.sellerId === user.id && !isGuestSellerId(product.sellerId)) || isGuestOwner;
+  if (!canManageListing(product, user, guestToken)) {
+    return jsonError("لا تملك صلاحية تعديل هذا الإعلان", 403);
+  }
 
   try {
     const body = await req.json();
@@ -93,6 +100,22 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       if (body.contactPhone !== undefined) changes.contactPhone = sanitizeText(body.contactPhone, 20) || null;
       if (body.notes !== undefined) changes.notes = sanitizeText(body.notes, 600) || null;
       if (body.keywords !== undefined) changes.keywords = sanitizeText(body.keywords, 200) || null;
+      if (body.sellerName !== undefined && isGuestSellerId(product.sellerId)) {
+        changes.guestName = sanitizeText(body.sellerName, 60) || null;
+      }
+      // ---- المواصفات الكاملة (اختيارية) ----
+      // نحدّث فقط المواصفات المُرسلة فعلًا حتى لا يمسح تعديل جزئي باقي المواصفات
+      const specKeys = [
+        "weight", "weightUnit", "itemType", "brand", "model",
+        "material", "color", "year", "dimensions", "specs",
+      ] as const;
+      if (specKeys.some((k) => body[k] !== undefined)) {
+        const parsedSpecs = parseSpecsPayload(body);
+        const target = changes as Record<string, unknown>;
+        for (const key of specKeys) {
+          if (body[key] !== undefined) target[key] = parsedSpecs[key];
+        }
+      }
       // إيقاف/تشغيل خاص بالبائع
       if (body.pause === true) changes.status = "PAUSED";
       if (body.pause === false) changes.status = "ACTIVE";
@@ -125,8 +148,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
       }
     }
 
-    // ---- إشعار البائع بقرارات الإدارة ----
-    if (admin && !isOwner) {
+    // ---- إشعار البائع بقرارات الإدارة (الضيف بلا حساب فلا إشعارات له) ----
+    if (admin && !isOwner && !isGuestSellerId(product.sellerId)) {
       if (changes.status === "ACTIVE") {
         notify({
           userId: product.sellerId, type: "LISTING_APPROVED",
@@ -149,16 +172,16 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   }
 }
 
-/** DELETE — حذف الإعلان (البائع أو الإدارة) */
+/** DELETE — حذف الإعلان (البائع أو صاحب الإعلان الضيف أو الإدارة) */
 export async function DELETE(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   const user = await getCurrentUser();
-  if (!user) return jsonError("سجل الدخول أولًا", 401);
+  const guestToken = await getGuestToken();
 
   const product = getProductRow(id);
   if (!product) return jsonError("المنتج غير موجود", 404);
 
-  if (product.sellerId !== user.id && !isAdmin(user)) {
+  if (!canManageListing(product, user, guestToken)) {
     return jsonError("لا تملك صلاحية حذف هذا الإعلان", 403);
   }
 

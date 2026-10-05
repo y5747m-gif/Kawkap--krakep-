@@ -3,6 +3,7 @@ import { all, get, run } from "../db";
 import { newId } from "../ids";
 import { GOVERNORATES } from "../constants";
 import { isDemoMode } from "../settings";
+import { GUEST_SELLER_ID } from "./users";
 import type { Notification, NotificationType, LocationRow, Report } from "../types";
 
 // ------------------------- الإشعارات -------------------------
@@ -127,7 +128,8 @@ export function getAdminStats(): AdminStats {
       "SELECT COUNT(*) AS c FROM orders WHERE status IN ('REVIEWED','CONTACTED','PROCESSING')"
     ),
     completedOrders: one("SELECT COUNT(*) AS c FROM orders WHERE status = 'COMPLETED'"),
-    totalUsers: one("SELECT COUNT(*) AS c FROM users"),
+    // حساب «البائع الضيف» حساب نظامي داخلي ولا يُحسب ضمن العملاء
+    totalUsers: one(`SELECT COUNT(*) AS c FROM users WHERE id != '${GUEST_SELLER_ID}'`),
     sellersCount: one("SELECT COUNT(DISTINCT seller_id) AS c FROM products"),
     totalProducts: one(`SELECT COUNT(*) AS c FROM products WHERE 1=1${demoFilter}`),
     activeProducts: one(`SELECT COUNT(*) AS c FROM products WHERE status = 'ACTIVE'${demoFilter}`),
@@ -157,7 +159,9 @@ export function listUsersForAdmin(): AdminUserRow[] {
        COALESCE(pf.sales_count, 0) AS sales_count,
        COALESCE(pf.rating_avg, 0) AS rating_avg
      FROM users u LEFT JOIN profiles pf ON pf.user_id = u.id
-     ORDER BY u.created_at DESC LIMIT 200`
+     WHERE u.id != ?
+     ORDER BY u.created_at DESC LIMIT 200`,
+    GUEST_SELLER_ID
   ).map((r) => ({
     id: r.id as string,
     name: r.name as string,

@@ -1,15 +1,19 @@
 import { NextRequest, after } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, ensureGuestToken } from "@/lib/auth";
 import { jsonOk, jsonError, getBaseUrl } from "@/lib/http";
 import {
   searchProducts, createProduct, getCategoryBySlug, type ProductQuery,
 } from "@/lib/models/products";
+import { ensureGuestSeller } from "@/lib/models/users";
 import { requiresApproval } from "@/lib/settings";
 import { notify } from "@/lib/models/misc";
 import { createOwnerListingLink, generateListingWhatsAppMessage, type ListingMessageData } from "@/lib/whatsapp";
 import { sendOwnerWhatsAppMessage, isAutoSendEnabled } from "@/lib/whatsapp-send";
-import { sanitizeText, isValidPrice, isValidQuantity } from "@/lib/validate";
-import { PRICING_TYPE_MAP, CONDITION_MAP, MAX_PRODUCT_IMAGES } from "@/lib/constants";
+import { sanitizeText, isValidPrice, isValidQuantity, normalizeEgyptianPhone } from "@/lib/validate";
+import { parseSpecsPayload } from "@/lib/specs";
+import {
+  PRICING_TYPE_MAP, CONDITION_MAP, MAX_PRODUCT_IMAGES, GUEST_SELLER_NAME,
+} from "@/lib/constants";
 import type { PricingType, ProductCondition, ProductStatus } from "@/lib/types";
 
 /** GET /api/products — بحث وتصفية المنتجات */
@@ -50,10 +54,14 @@ export async function GET(req: NextRequest) {
   return jsonOk({ products: items, total });
 }
 
-/** POST /api/products — نشر إعلان جديد (العملاء هم البائعون) */
+/**
+ * POST /api/products — نشر إعلان جديد (العملاء هم البائعون)
+ *
+ * تسجيل الدخول *اختياري*: من يملك حسابًا يُنسب الإعلان لحسابه،
+ * ومن لا يملك ينشر كـ«ضيف» ويُحفظ رمز متصفحه ليعدّل إعلانه لاحقًا.
+ */
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
-  if (!user) return jsonError("سجل الدخول أولًا لتتمكن من البيع", 401);
 
   try {
     const body = await req.json();
@@ -87,8 +95,16 @@ export async function POST(req: NextRequest) {
     const area = body.area ? sanitizeText(body.area, 60) : null;
     const hasDelivery = !!body.hasDelivery;
     const negotiable = !!body.negotiable;
-    const contactPhone = body.contactPhone ? sanitizeText(body.contactPhone, 20) : user.phone;
+
+    // رقم التواصل اختياري تمامًا — إن تُرك فارغًا نستخدم رقم الحساب إن وُجد
+    const rawPhone = sanitizeText(body.contactPhone, 20);
+    const contactPhone = rawPhone
+      ? (normalizeEgyptianPhone(rawPhone) ?? rawPhone)
+      : (user?.phone ?? null);
     const notes = body.notes ? sanitizeText(body.notes, 600) : null;
+
+    // المواصفات الكاملة (كلها اختيارية)
+    const specs = parseSpecsPayload(body);
 
     const images: string[] = Array.isArray(body.images)
       ? body.images.filter((u: unknown) => typeof u === "string" && String(u).startsWith("/uploads/")).slice(0, MAX_PRODUCT_IMAGES)
@@ -98,8 +114,18 @@ export async function POST(req: NextRequest) {
     const status: ProductStatus = requiresApproval() ? "PENDING" : "ACTIVE";
     const keywords = sanitizeText(body.keywords, 200) || null;
 
+    // ---------- البائع: حساب مسجل أو ضيف بدون حساب ----------
+    const isGuest = !user;
+    const guestName = isGuest ? (sanitizeText(body.sellerName, 60) || null) : null;
+    const sellerId = user ? user.id : ensureGuestSeller();
+    const guestToken = isGuest ? await ensureGuestToken() : null;
+    const sellerDisplayName = user?.name ?? guestName ?? GUEST_SELLER_NAME;
+
     const product = createProduct({
-      sellerId: user.id,
+      ...specs,
+      sellerId,
+      guestName,
+      guestToken,
       categoryId: category.id,
       title,
       description,
@@ -121,17 +147,19 @@ export async function POST(req: NextRequest) {
       images,
     });
 
-    // إشعار للبائع بحالة الإعلان
-    notify({
-      userId: user.id,
-      type: status === "ACTIVE" ? "LISTING_PUBLISHED" : "SYSTEM",
-      title: status === "ACTIVE" ? "تم نشر إعلانك" : "إعلانك قيد المراجعة",
-      body:
-        status === "ACTIVE"
-          ? `إعلانك «${title}» منشور الآن ويمكن للجميع رؤيته`
-          : `إعلانك «${title}» في انتظار موافقة الإدارة وسيظهر بعد القبول`,
-      link: status === "ACTIVE" ? `/products/${product.id}` : "/account?tab=selling",
-    });
+    // إشعار للبائع بحالة الإعلان (للحسابات المسجلة فقط — الضيف ليس له حساب)
+    if (user) {
+      notify({
+        userId: user.id,
+        type: status === "ACTIVE" ? "LISTING_PUBLISHED" : "SYSTEM",
+        title: status === "ACTIVE" ? "تم نشر إعلانك" : "إعلانك قيد المراجعة",
+        body:
+          status === "ACTIVE"
+            ? `إعلانك «${title}» منشور الآن ويمكن للجميع رؤيته`
+            : `إعلانك «${title}» في انتظار موافقة الإدارة وسيظهر بعد القبول`,
+        link: status === "ACTIVE" ? `/products/${product.id}` : "/account?tab=selling",
+      });
+    }
 
     /* ------------------------------------------------------------------
      * طلب البيع يصل تلقائيًا لواتساب المالك:
@@ -140,6 +168,7 @@ export async function POST(req: NextRequest) {
      * ------------------------------------------------------------------ */
     const baseUrl = getBaseUrl(req);
     const listingMessage: ListingMessageData = {
+      ...specs,
       code: product.code,
       title: product.title,
       categoryName: category.name,
@@ -158,8 +187,9 @@ export async function POST(req: NextRequest) {
       imagesCount: images.length,
       notes: product.notes,
       contactPhone: product.contactPhone,
-      sellerName: user.name,
-      sellerPhone: user.phone,
+      sellerName: sellerDisplayName,
+      sellerPhone: user?.phone ?? product.contactPhone,
+      isGuest,
       status,
       createdAt: product.createdAt,
       productLink: `${baseUrl}/products/${product.id}`,
@@ -173,7 +203,7 @@ export async function POST(req: NextRequest) {
       after(() => sendOwnerWhatsAppMessage(text));
     }
 
-    return jsonOk({ product, status, whatsappUrl });
+    return jsonOk({ product, status, whatsappUrl, isGuest });
   } catch (e) {
     console.error(e);
     return jsonError("تعذر نشر الإعلان، حاول مرة أخرى", 500);

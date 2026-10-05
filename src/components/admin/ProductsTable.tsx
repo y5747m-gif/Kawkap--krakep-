@@ -144,6 +144,9 @@ export default function AdminProductsTable({
                   <StatusBadge status={p.status} type="product" />
                   {p.featured && <span className="chip border-gold-400/50 bg-gold-500/15 text-gold-600"><Star size={11} className="fill-gold-500" /> مميز</span>}
                   {p.isDemo && <span className="chip border-sky-200 bg-sky-50 text-sky-600">تجريبي</span>}
+                  {p.isGuestSeller && (
+                    <span className="chip border-violet-200 bg-violet-50 text-violet-600">نُشر بدون حساب</span>
+                  )}
                 </div>
                 <p className="mt-1 text-xs text-planet-500">
                   {p.categoryName} · البائع: <span className="font-bold">{p.sellerName}</span> · {p.gov}{p.area ? ` — ${p.area}` : ""} · {formatDate(p.createdAt)}

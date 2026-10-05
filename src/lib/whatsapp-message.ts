@@ -140,6 +140,11 @@ export function generateOrderWhatsAppMessage(order: OrderWithItems, productLink?
 // 2) طلب عرض منتج للبيع → يصل لواتساب المالك تلقائيًا
 // ============================================================
 
+export interface ListingSpecLine {
+  label: string;
+  value: string;
+}
+
 export interface ListingMessageData {
   /** كود الإعلان الداخلي (إن وُجد) */
   code?: string | null;
@@ -162,10 +167,23 @@ export interface ListingMessageData {
   contactPhone?: string | null;
   sellerName: string;
   sellerPhone?: string | null;
+  /** نُشر بدون حساب */
+  isGuest?: boolean;
   status?: string | null;
   createdAt?: string | null;
   productLink?: string | null;
   imageLinks?: string[];
+  // ---------- المواصفات الكاملة لما يُباع (كلها اختيارية) ----------
+  weight?: number | null;
+  weightUnit?: string | null;
+  itemType?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  material?: string | null;
+  color?: string | null;
+  year?: number | null;
+  dimensions?: string | null;
+  specs?: ListingSpecLine[];
 }
 
 /** رسالة «أريد بيع هذا الشيء» التي يرسلها البائع لمالك المنصة */
@@ -179,7 +197,8 @@ export function generateListingWhatsAppMessage(data: ListingMessageData): string
   const seller = block(
     "👤 *بيانات البائع*",
     line("🔸", "الاسم", data.sellerName),
-    line("📱", "رقم التواصل", data.contactPhone || data.sellerPhone),
+    line("📱", "رقم التواصل", data.contactPhone || data.sellerPhone || "لم يتركه البائع — رد على هذه المحادثة"),
+    line("🧾", "نوع الحساب", data.isGuest ? "نشر بدون حساب (ضيف)" : null),
     line("📍", "الموقع", locationText(data.gov, data.area) || "لم يحدده البائع"),
     line("🗺️", "الموقع على الخريطة", mapsLink(data.latitude, data.longitude)),
   );
@@ -196,6 +215,27 @@ export function generateListingWhatsAppMessage(data: ListingMessageData): string
     line("🚚", "يوجد توصيل", data.hasDelivery ? "نعم ✅" : "لا ❌"),
     line("🖼️", "عدد الصور", data.imagesCount ? imagesLabel(data.imagesCount) : null),
   );
+
+  // ---------- المواصفات الكاملة كما أدخلها البائع ----------
+  const customSpecs = (data.specs ?? [])
+    .filter((s) => s && String(s.label).trim() && String(s.value).trim())
+    .map((s) => line("▫️", String(s.label).trim(), String(s.value).trim()));
+
+  const specLines = [
+    line("⚖️", "الوزن", data.weight != null ? `${formatNumber(data.weight)} ${data.weightUnit || "كجم"}` : null),
+    line("🧩", "النوع", data.itemType),
+    line("🧪", "الخامة", data.material),
+    line("🏭", "الماركة", data.brand),
+    line("🔧", "الموديل", data.model),
+    line("🎨", "اللون", data.color),
+    line("📅", "سنة الصنع", data.year != null ? String(data.year) : null),
+    line("📐", "المقاسات", data.dimensions),
+    ...customSpecs,
+  ].filter(Boolean);
+
+  const specifications = specLines.length
+    ? block("🧾 *المواصفات الكاملة*", ...specLines)
+    : null;
 
   const details = block(
     "📝 *الوصف والملاحظات*",
@@ -218,6 +258,8 @@ export function generateListingWhatsAppMessage(data: ListingMessageData): string
     seller,
     "",
     item,
+    specifications ? "" : null,
+    specifications,
     "",
     details,
     "",

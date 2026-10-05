@@ -57,7 +57,7 @@ export default async function HomePage() {
 
           <p className="fade-up fade-up-2 mx-auto mt-5 max-w-xl text-sm leading-8 text-white/75 sm:text-base">
             اعرض الأشياء التي لم تعد تحتاجها، ودع شخصًا آخر يستفيد منها.
-            منصة يصنعها الناس — كل عميل يستطيع البيع والشراء في نفس الحساب.
+            منصة يصنعها الناس — انشر إعلانك بمواصفاته كاملة بدون تسجيل دخول.
           </p>
 
           <div className="fade-up fade-up-3 mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
