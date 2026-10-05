@@ -9,8 +9,8 @@ import { normalizeEgyptianPhone } from "./validate";
 
 export const SESSION_COOKIE = "kk_session";
 /**
- * رمز الزائر — يسمح لمن ينشر إعلانًا بدون حساب أن يعود لتعديله أو حذفه
- * من نفس المتصفح. لا يمنح أي صلاحية أخرى (ولا يرى به إعلانات غيره).
+ * رمز الزائر — يسمح لمن يرسل طلب بيع بدون حساب أن يعود لعرض سجله
+ * من نفس المتصفح. لا يمنحه صلاحية تعديل الطلب أو رؤية طلبات غيره.
  */
 export const GUEST_COOKIE = "kk_guest";
 const GUEST_COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // سنة
@@ -66,8 +66,8 @@ export async function ensureGuestToken(): Promise<string> {
   return token;
 }
 
-/** هل يملك هذا الزائر/المستخدم صلاحية التحكم في الإعلان؟ */
-export function canManageListing(
+/** هل هذا الزائر/المستخدم هو صاحب الطلب؟ (للعرض والتحويل إلى سجله فقط) */
+export function isListingOwner(
   product: { sellerId: string; guestToken: string | null },
   user: CurrentUser | null,
   guestToken: string | null

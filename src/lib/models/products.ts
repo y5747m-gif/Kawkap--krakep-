@@ -473,7 +473,7 @@ export function myProducts(sellerId: string): ProductCardData[] {
   return rows.map((r) => mapCardRow(r as Record<string, unknown>));
 }
 
-/** إعلانات الزائر الذي نشر بدون حساب (من نفس المتصفح فقط) */
+/** طلبات بيع الزائر الذي نشر بدون حساب (للعرض من نفس المتصفح فقط) */
 export function guestProducts(guestToken: string): ProductCardData[] {
   if (!guestToken) return [];
   const rows = all(

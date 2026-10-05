@@ -77,7 +77,7 @@ export interface Product extends ProductSpecs {
   sellerId: string;
   /** اسم البائع الضيف (النشر بدون حساب) */
   guestName: string | null;
-  /** رمز متصفح الضيف — يسمح له بتعديل إعلانه دون حساب */
+  /** رمز متصفح الضيف — يسمح له بعرض سجل طلبات البيع من نفس المتصفح */
   guestToken: string | null;
   categoryId: string;
   title: string;

@@ -17,9 +17,9 @@ import { formatMoney, formatQuantity, formatNumber, formatDate } from "@/lib/for
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "لوحة البائع" };
+export const metadata = { title: "متابعة المبيعات" };
 
-/** لوحة البائع — إحصائيات، إعلاناتي، والطلبات على منتجاتي */
+/** متابعة المبيعات — إحصائيات وطلبات وعروض محفوظة للقراءة فقط */
 export default async function SellerPage() {
   const user = await getCurrentUser();
 
@@ -27,8 +27,8 @@ export default async function SellerPage() {
     return (
       <EmptyState
         icon={Store}
-        title="لوحة البائع"
-        subtitle="سجل الدخول لتدير إعلاناتك ومبيعاتك من مكان واحد"
+        title="متابعة المبيعات"
+        subtitle="سجل الدخول لترى طلبات البيع والمبيعات الخاصة بك من مكان واحد"
         action={<Link href="/login?next=/seller" className="btn-sell px-6 py-3 text-sm">تسجيل الدخول</Link>}
       />
     );
@@ -55,9 +55,9 @@ export default async function SellerPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-black text-planet-950">
-            <Store size={25} className="text-planet-600" /> لوحة البائع
+            <Store size={25} className="text-planet-600" /> متابعة المبيعات
           </h1>
-          <p className="mt-1 text-sm text-planet-600">كل ما يخص نشاطك في البيع — إعلاناتك وطلباتك وإحصائياتك</p>
+          <p className="mt-1 text-sm text-planet-600">طلبات البيع ومبيعاتك وإحصائياتك — البيانات المرسلة للعرض فقط</p>
         </div>
         <Link href="/sell" className="btn-sell px-5 py-3 text-sm">
           <Plus size={16} /> اعرض شيئًا للبيع
@@ -130,10 +130,10 @@ export default async function SellerPage() {
             )}
           </section>
 
-          {/* إعلاناتي */}
+          {/* طلبات البيع — عرض فقط */}
           <section>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-extrabold text-planet-950">
-              <ShoppingBag size={19} className="text-planet-500" /> إعلاناتي
+              <ShoppingBag size={19} className="text-planet-500" /> طلبات البيع الخاصة بي
               <span className="chip border-planet-200 bg-planet-50 text-planet-600">{formatNumber(stats.total)}</span>
             </h2>
             {products.length ? (

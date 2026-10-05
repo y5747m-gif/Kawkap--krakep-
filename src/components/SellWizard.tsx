@@ -288,12 +288,9 @@ export default function SellWizard({
       }
 
       // ------- الطلب يصل تلقائيًا لواتساب مالك المنصة -------
-      const nextUrl =
-        data.status === "PENDING"
-          ? isGuest
-            ? "/sell"
-            : "/account?tab=selling"
-          : `/products/${data.product.id}?sent=1`;
+      // بعد الإرسال ينتقل العميل إلى سجل بيع للعرض فقط بدل فتح واجهة
+      // التعديل أو إعادته إلى معالج إضافة إعلان جديد.
+      const nextUrl = `/sales?submitted=${encodeURIComponent(data.product.id)}`;
 
       let whatsappOpened = true;
       if (data.whatsappUrl) {
