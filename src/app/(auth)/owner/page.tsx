@@ -27,8 +27,10 @@ function OwnerLoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast(`أهلًا بك ${data.user.name} — لوحة الإدارة جاهزة`, "success");
-      // تنقّل كامل حتى تصل كوكي الجلسة قبل فتح لوحة الإدارة المحمية
-      window.location.assign(next);
+      // استبدال الصفحة (وليس تنقّلًا داخليًا) مهم هنا: لوحة الإدارة Server
+      // Component وتقرأ كوكي الجلسة من الخادم، لذلك يجب أن يبدأ طلب جديد بعد
+      // نجاح تسجيل الدخول. replace أيضًا يمنع رجوع زر المتصفح إلى نموذج الدخول.
+      window.location.replace(next);
     } catch (err) {
       toast(err instanceof Error ? err.message : "حدث خطأ", "error");
       setLoading(false);

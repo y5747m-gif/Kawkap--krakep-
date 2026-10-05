@@ -23,7 +23,11 @@ export async function POST(req: NextRequest) {
     }
 
     await startSession(result.user.id);
-    return jsonOk({ user: result.user });
+    // لا نسمح بتخزين استجابة تسجيل الدخول أو إعادة استخدامها من cache؛
+    // الكوكي الجديدة يجب أن تُقرأ في طلب /admin التالي مباشرة.
+    return jsonOk({ user: result.user }, {
+      headers: { "Cache-Control": "no-store, private" },
+    });
   } catch (e) {
     console.error(e);
     return jsonError("تعذر تسجيل الدخول، حاول مرة أخرى", 500);

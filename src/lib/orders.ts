@@ -153,35 +153,49 @@ export function createOrder(
   });
 
   // ---------- الإشعارات ----------
-  // 1) لكل بائع: لديك طلب جديد
-  const sellerIds = [...new Set(items.map((i) => i.sellerId))];
-  for (const sellerId of sellerIds) {
-    const sellerItems = items.filter((i) => i.sellerId === sellerId);
-    notify({
-      userId: sellerId,
-      type: "NEW_ORDER",
-      title: "لديك طلب جديد",
-      body: `طلب رقم #${order.orderCode} على ${sellerItems.map((i) => `«${i.title}»`).join(" و ")} بقيمة ${formatMoney(sellerItems.reduce((s, i) => s + i.lineTotal, 0))}`,
-      link: "/seller",
-    });
-  }
-  // 2) للمشتري (إن كان مسجلًا): تم إنشاء طلبك
-  if (viewer) {
-    notify({
-      userId: viewer.id,
-      type: "ORDER_CREATED",
-      title: "تم إنشاء طلبك بنجاح",
-      body: `رقم الطلب: ${order.orderCode} — سيتم التواصل معك لتأكيد التفاصيل`,
-      link: `/orders/${order.orderCode}`,
-    });
+  // هذه خدمات مساعدة بعد الحفظ وليست جزءًا من إنشاء الطلب. لو فشلت كتابة
+  // إشعار (مثلًا أثناء ضغط قاعدة البيانات) لا يجوز أن يرى العميل رسالة فشل
+  // ويعيد الإرسال، فينتج طلبان؛ فالطلب الرئيسي محفوظ بالفعل.
+  try {
+    // 1) لكل بائع: لديك طلب جديد
+    const sellerIds = [...new Set(items.map((i) => i.sellerId))];
+    for (const sellerId of sellerIds) {
+      const sellerItems = items.filter((i) => i.sellerId === sellerId);
+      notify({
+        userId: sellerId,
+        type: "NEW_ORDER",
+        title: "لديك طلب جديد",
+        body: `طلب رقم #${order.orderCode} على ${sellerItems.map((i) => `«${i.title}»`).join(" و ")} بقيمة ${formatMoney(sellerItems.reduce((s, i) => s + i.lineTotal, 0))}`,
+        link: "/seller",
+      });
+    }
+    // 2) للمشتري (إن كان مسجلًا): تم إنشاء طلبك
+    if (viewer) {
+      notify({
+        userId: viewer.id,
+        type: "ORDER_CREATED",
+        title: "تم إنشاء طلبك بنجاح",
+        body: `رقم الطلب: ${order.orderCode} — سيتم التواصل معك لتأكيد التفاصيل`,
+        link: `/orders/${order.orderCode}`,
+      });
+    }
+  } catch (error) {
+    console.error("Order saved but notification delivery failed", error);
   }
 
   // ---------- تجهيز رابط واتساب المالك (بعد الحفظ) ----------
   const fullOrder = getOrderByCode(order.orderCode)!;
   const whatsappUrl = createOwnerOrderLink(fullOrder, baseUrl);
 
-  // تفريغ السلة بعد طلبها
-  if (payload.source === "CART" && viewer) clearCart(viewer.id);
+  // تفريغ السلة بعد حفظ الطلب. الفشل هنا لا يلغي الطلب المحفوظ؛ في أسوأ
+  // الأحوال سيجد العميل السلة كما هي ويمكنه حذفها يدويًا بدل إنشاء طلب مكرر.
+  if (payload.source === "CART" && viewer) {
+    try {
+      clearCart(viewer.id);
+    } catch (error) {
+      console.error("Order saved but cart cleanup failed", error);
+    }
+  }
 
   return { order: fullOrder, whatsappUrl };
 }
