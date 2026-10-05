@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest } from "next/server";
 import { getCurrentUser, ensureGuestToken } from "@/lib/auth";
-import { jsonOk, jsonError } from "@/lib/http";
+import { jsonOk, jsonError, isSecureRequest } from "@/lib/http";
 import { saveUploadedFile } from "@/lib/uploads";
 
 const ALLOWED: Record<string, string> = {
@@ -24,7 +24,7 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5MB
  */
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
-  if (!user) await ensureGuestToken();
+  if (!user) await ensureGuestToken(isSecureRequest(req));
 
   try {
     const form = await req.formData();
